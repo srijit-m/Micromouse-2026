@@ -188,7 +188,7 @@ def update_walls(maze: Maze, row, col, direction):
 
 def move_mouse(maze, row, col, direction):
     """Moves the mouse and returns the new position and direction of movement"""
-    next_dir = maze.next_dir(row, col, direction)
+    next_dir = maze.next_direction(row, col, direction)
     move = maze.next_move(direction, next_dir)
     if move == Move.FORWARD:
         API.moveForward()
@@ -207,10 +207,10 @@ def move_mouse(maze, row, col, direction):
 
 def main():
     # the API uses (x, y) cartesian coordinates
-    # the Maze class uses (r, c) graphics coordinates
-    height = API.mazeHeight()
+    # the Maze class uses (r, c) coordinates
     width = API.mazeWidth()
-    assert height and width
+    height = API.mazeHeight()
+    assert width and height
 
     # starting position and direction
     start = (height - 1, 0)
