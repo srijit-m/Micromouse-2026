@@ -33,7 +33,7 @@ class Move(Enum):
     RIGHT = 1
     BACKWARD = 2
     LEFT = 3
-    IDLE = 4
+    NONE = 4
 
 
 class Maze:
@@ -46,22 +46,23 @@ class Maze:
         self._dists = [[-1] * cols for _ in range(rows)]
 
     @property
-    def height(self):
+    def height(self) -> int:
         return self._rows
 
     @property
-    def width(self):
+    def width(self) -> int:
         return self._cols
 
     @property
-    def goal(self):
+    def goal(self) -> Position:
         return self._goal
 
     @goal.setter
-    def goal(self, pos: Position):
+    def goal(self, pos: Position) -> None:
         self._goal = pos
 
-    def get_dists(self) -> list[list[int]]:
+    @property
+    def dists(self) -> list[list[int]]:
         return self._dists
 
     def get_wall(self, row, col, direction: Dir) -> tuple[list[list[bool]], int, int]:
@@ -114,7 +115,7 @@ class Maze:
         """Updates the manhattan distances using floodfill, then returns the
         direction to move, based on the current position"""
         self.floodfill()
-        dists = self.get_dists()
+        dists = self.dists
         min_dist = dists[row][col]
         next_dir = current_dir
         # find neighbouring cell with lowest distance from goal
@@ -140,11 +141,30 @@ class Maze:
             return Move.BACKWARD
         if offset == 3:
             return Move.LEFT
-        return Move.IDLE
+        return Move.NONE
+
+
+def rc_to_xy(row, col, num_rows):
+    """Convert from (row, col) to (x, y) coordinates"""
+    return col, num_rows - 1 - row
+
+
+def display_walls(maze: Maze, row, col):
+    for dir in Dir:
+        if maze.is_wall(row, col, dir):
+            x, y = rc_to_xy(row, col, maze.height)
+            if dir == Dir.NORTH:
+                API.setWall(x, y, "n")
+            elif dir == Dir.EAST:
+                API.setWall(x, y, "e")
+            elif dir == Dir.SOUTH:
+                API.setWall(x, y, "s")
+            elif dir == Dir.WEST:
+                API.setWall(x, y, "w")
 
 
 def display_dists(maze: Maze):
-    dists = maze.get_dists()
+    dists = maze.dists
     for row_idx, row in enumerate(dists):
         for col_idx, dist in enumerate(row):
             API.setText(*rc_to_xy(row_idx, col_idx, maze.height), dist)
@@ -155,17 +175,9 @@ def log(string):
     sys.stderr.flush()
 
 
-def rc_to_xy(row, col, num_rows):
-    """Convert from (row, col) to (x, y) coordinates"""
-    return col, num_rows - 1 - row
-
-
 def main():
     # the API uses (x, y) cartesian coordinates
     # the Maze class uses (r, c) graphics coordinates
-    log("Running...")
-    API.setColor(0, 0, "G")
-
     height = API.mazeHeight()
     width = API.mazeWidth()
     assert height and width
@@ -189,19 +201,19 @@ def main():
         # update maze based on surrounding walls
         if API.wallFront():
             maze.add_wall(row, col, dir)
-            # API.setWall(*rc_to_xy(row, col, height), "n")
         if API.wallLeft():
             maze.add_wall(row, col, dir.rotate(-1))
-            # API.setWall(*rc_to_xy(row, col, height), "w")
         if API.wallRight():
             maze.add_wall(row, col, dir.rotate(1))
-            # API.setWall(*rc_to_xy(row, col, height), "e")
 
         # update distances
         maze.floodfill()
+
+        # display walls and distances for debugging
+        display_walls(maze, row, col)
         display_dists(maze)
 
-        # move (and update direction)
+        # move the mouse
         next_dir = maze.next_dir(row, col, dir)
         move = maze.next_move(dir, next_dir)
         if move == Move.FORWARD:
@@ -221,13 +233,6 @@ def main():
         dir = next_dir
         row += dir.dr
         col += dir.dc
-
-    # while True:
-    #     if not API.wallLeft():
-    #         API.turnLeft()
-    #     while API.wallFront():
-    #         API.turnRight()
-    #     API.moveForward()
 
 
 if __name__ == "__main__":
