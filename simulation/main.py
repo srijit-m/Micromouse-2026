@@ -23,6 +23,12 @@ class Dir(Enum):
         return self.value[1]
 
 
+class Move(Enum):
+    FORWARD = 0
+    LEFT = 1
+    RIGHT = 2
+
+
 class Maze:
     def __init__(self, rows, cols) -> None:
         self._rows = rows
@@ -31,6 +37,14 @@ class Maze:
         self._h_walls = [[False] * cols for _ in range(rows + 1)]
         self._v_walls = [[False] * (cols + 1) for _ in range(rows)]
         self._dists = [[-1] * cols for _ in range(rows)]
+
+    @property
+    def height(self):
+        return self._rows
+
+    @property
+    def width(self):
+        return self._cols
 
     def set_goal(self, row, col):
         self._goal = (row, col)
@@ -58,16 +72,19 @@ class Maze:
         walls, r, c = self.get_wall(row, col, direction)
         return walls[r][c]
 
-    def neighbours(self, row, col) -> list[Position]:
+    def neighbours(self, row, col) -> list[tuple[int, int, Dir]]:
         """Returns the accessible neighbouring cells from the specified position,
         i.e. cells that are within bounds and not blocked by a wall.
+
+        Returns:
+            List of tuples where each tuple contains (row, col, dir)
         """
         neighbours = []
         for d in Dir:
             nr, nc = row + d.dr, col + d.dc
             if 0 <= nr < self._rows and 0 <= nc < self._cols:  # within bounds
                 if not self.is_wall(row, col, d):  # not blocked by a wall
-                    neighbours.append((nr, nc))
+                    neighbours.append((nr, nc, d))
         return neighbours
 
     def floodfill(self) -> None:
@@ -76,38 +93,27 @@ class Maze:
         q = deque([self._goal])
         while q:
             row, col = q.popleft()
-            for nr, nc in self.neighbours(row, col):
+            for nr, nc, _ in self.neighbours(row, col):
                 if self._dists[nr][nc] == -1:  # check cell is blank
                     self._dists[nr][nc] = self._dists[row][col] + 1
                     q.append((nr, nc))
 
-    def next_move(self, row, col) -> Dir:
-        """Updates the manhattan distances using floodfill, then returns the
-        direction of the best next move, from the current position"""
-        self.floodfill()
-        dists = self.get_dists()
-        min = dists[row][col]
-        # find neighbouring cell with lowest distance from goal
-        for nr, nc in self.neighbours(row, col):
-            pass
 
-
-def display_dists(maze: Maze, rows: int):
+def display_dists(maze: Maze):
     dists = maze.get_dists()
     for row_idx, row in enumerate(dists):
         for col_idx, dist in enumerate(row):
-            # switch coordinate system
-            API.setText(col_idx, rows - row_idx - 1, dist)
-
-
-def display_walls(maze: Maze):
-    # redraw all walls? or draw them as they are found?
-    pass
+            API.setText(*rc_to_xy(row_idx, col_idx, maze.height), dist)
 
 
 def log(string):
     sys.stderr.write("{}\n".format(string))
     sys.stderr.flush()
+
+
+def rc_to_xy(row, col, num_rows):
+    """Convert from (row, col) to (x, y) coordinates"""
+    return col, num_rows - 1 - row
 
 
 def main():
@@ -116,32 +122,40 @@ def main():
     log("Running...")
     API.setColor(0, 0, "G")
 
-    rows = API.mazeHeight()
-    cols = API.mazeWidth()
+    height = API.mazeHeight()
+    width = API.mazeWidth()
 
     # starting position and direction
-    row = rows - 1
+    row = height - 1
     col = 0
     dir = Dir.NORTH
 
-    maze = Maze(rows, cols)
+    maze = Maze(height, width)
 
-    # test adding some walls
-    maze.add_wall(rows - 1, 0, Dir.EAST)
-    maze.add_wall(rows - 2, 0, Dir.EAST)
-    maze.add_wall(rows - 3, 0, Dir.NORTH)
-    maze.add_wall(rows - 3, 1, Dir.EAST)
-
-    maze.floodfill()
-    display_dists(maze, rows)
-
-    # wall follower
     while True:
-        if not API.wallLeft():
-            API.turnLeft()
-        while API.wallFront():
-            API.turnRight()
-        API.moveForward()
+        # check for walls
+        if API.wallFront():
+            maze.add_wall(row, col, Dir.NORTH)
+            API.setWall(*rc_to_xy(row, col, height), "n")
+        if API.wallLeft():
+            maze.add_wall(row, col, Dir.WEST)
+            API.setWall(*rc_to_xy(row, col, height), "w")
+        if API.wallRight():
+            maze.add_wall(row, col, Dir.EAST)
+            API.setWall(*rc_to_xy(row, col, height), "e")
+
+        # update distances
+        maze.floodfill()
+        display_dists(maze)
+
+    log(maze.next_move(row, col))
+
+    # while True:
+    #     if not API.wallLeft():
+    #         API.turnLeft()
+    #     while API.wallFront():
+    #         API.turnRight()
+    #     API.moveForward()
 
 
 if __name__ == "__main__":
