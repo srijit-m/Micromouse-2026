@@ -13,3 +13,5 @@ if __name__ == "__main__":
     while True:
         mm.led_green_set(1)
         mm.led_red_set(0)
+        ir1Reading = mm.get_ir_values(1)
+        print("IR1 Reading: ", ir1Reading)
