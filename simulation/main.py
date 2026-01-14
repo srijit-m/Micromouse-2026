@@ -22,6 +22,12 @@ class Dir(Enum):
     def dc(self) -> int:
         return self.value[1]
 
+    # # chat helped with this
+    # def rotate(self, steps):
+    #     directions = list(type(self))
+    #     i = directions.index(self)
+    #     return directions[(i + steps) % len(directions)]
+
 
 class Move(Enum):
     FORWARD = 0
@@ -99,9 +105,9 @@ class Maze:
                     self._dists[nr][nc] = self._dists[row][col] + 1
                     q.append((nr, nc))
 
-    def next_move(self, row, col, current_dir):
+    def next_dir(self, row, col, current_dir: Dir) -> Dir:
         """Updates the manhattan distances using floodfill, then returns the
-        best next move and direction, based on the current position and direction"""
+        direction to move, based on the current position"""
         self.floodfill()
         dists = self.get_dists()
         min_dist = dists[row][col]
@@ -112,40 +118,22 @@ class Maze:
             if dist < min_dist:
                 min_dist = dist
                 next_dir = dir
+        return next_dir
 
-        # this is gross...
-        # need to figure out movement based on current direction
-        next_move = Move.IDLE
-        if current_dir == Dir.NORTH:
-            if next_dir == Dir.NORTH:
-                next_move = Move.FORWARD
-            elif next_dir == Dir.WEST:
-                next_move = Move.LEFT
-            elif next_dir == Dir.EAST:
-                next_move = Move.RIGHT
-        elif current_dir == Dir.EAST:
-            if next_dir == Dir.EAST:
-                next_move = Move.FORWARD
-            elif next_dir == Dir.NORTH:
-                next_move = Move.LEFT
-            elif next_dir == Dir.SOUTH:
-                next_move = Move.RIGHT
-        elif current_dir == Dir.SOUTH:
-            if next_dir == Dir.SOUTH:
-                next_move = Move.FORWARD
-            elif next_dir == Dir.EAST:
-                next_move = Move.LEFT
-            elif next_dir == Dir.WEST:
-                next_move = Move.RIGHT
-        elif current_dir == Dir.WEST:
-            if next_dir == Dir.WEST:
-                next_move = Move.FORWARD
-            elif next_dir == Dir.SOUTH:
-                next_move = Move.LEFT
-            elif next_dir == Dir.NORTH:
-                next_move = Move.RIGHT
+    def next_move(self, current_dir: Dir, next_dir: Dir) -> Move:
+        """Returns the required move to make based on the current direction and
+        the next direction"""
+        # take advantage of the fact that the Dir enum is ordered clockwise
+        dirs = list(Dir)
+        offset = (dirs.index(next_dir) - dirs.index(current_dir)) % len(dirs)
 
-        return next_move, next_dir
+        if offset == 0:
+            return Move.FORWARD
+        if offset == 1:
+            return Move.RIGHT
+        if offset == 3:
+            return Move.LEFT
+        return Move.IDLE
 
 
 def display_dists(maze: Maze):
@@ -184,7 +172,9 @@ def main():
     while True:
         # check for walls
         if API.wallFront():
-            maze.add_wall(row, col, Dir.NORTH)
+            maze.add_wall(
+                row, col, dir
+            )  # TODO: these directions are worong once the mouse turns!
             API.setWall(*rc_to_xy(row, col, height), "n")
         if API.wallLeft():
             maze.add_wall(row, col, Dir.WEST)
@@ -198,7 +188,8 @@ def main():
         display_dists(maze)
 
         # move (and update direction)
-        move, dir = maze.next_move(row, col, dir)
+        next_dir = maze.next_dir(row, col, dir)
+        move = maze.next_move(dir, next_dir)
         if move == Move.FORWARD:
             API.moveForward()
         elif move == Move.LEFT:
