@@ -22,18 +22,18 @@ class Dir(Enum):
     def dc(self) -> int:
         return self.value[1]
 
-    # # chat helped with this
-    # def rotate(self, steps):
-    #     directions = list(type(self))
-    #     i = directions.index(self)
-    #     return directions[(i + steps) % len(directions)]
+    def rotate(self, steps):
+        directions = list(type(self))
+        i = directions.index(self)
+        return directions[(i + steps) % len(directions)]
 
 
 class Move(Enum):
     FORWARD = 0
-    LEFT = 1
-    RIGHT = 2
-    IDLE = 3
+    RIGHT = 1
+    BACKWARD = 2
+    LEFT = 3
+    IDLE = 4
 
 
 class Maze:
@@ -53,8 +53,13 @@ class Maze:
     def width(self):
         return self._cols
 
-    def set_goal(self, row, col):
-        self._goal = (row, col)
+    @property
+    def goal(self):
+        return self._goal
+
+    @goal.setter
+    def goal(self, pos: Position):
+        self._goal = pos
 
     def get_dists(self) -> list[list[int]]:
         return self._dists
@@ -131,6 +136,8 @@ class Maze:
             return Move.FORWARD
         if offset == 1:
             return Move.RIGHT
+        if offset == 2:
+            return Move.BACKWARD
         if offset == 3:
             return Move.LEFT
         return Move.IDLE
@@ -161,27 +168,34 @@ def main():
 
     height = API.mazeHeight()
     width = API.mazeWidth()
+    assert height and width
 
     # starting position and direction
-    row = height - 1
-    col = 0
+    start = (height - 1, 0)
+    row, col = start
     dir = Dir.NORTH
 
     maze = Maze(height, width)
 
     while True:
-        # check for walls
+        # mouse goes back and forth between start and centre
+        if maze.goal == (row, col):
+            if maze.goal == start:
+                maze.goal = height // 2, width // 2
+            else:
+                log("Centre reached")
+                maze.goal = start
+
+        # update maze based on surrounding walls
         if API.wallFront():
-            maze.add_wall(
-                row, col, dir
-            )  # TODO: these directions are worong once the mouse turns!
-            API.setWall(*rc_to_xy(row, col, height), "n")
+            maze.add_wall(row, col, dir)
+            # API.setWall(*rc_to_xy(row, col, height), "n")
         if API.wallLeft():
-            maze.add_wall(row, col, Dir.WEST)
-            API.setWall(*rc_to_xy(row, col, height), "w")
+            maze.add_wall(row, col, dir.rotate(-1))
+            # API.setWall(*rc_to_xy(row, col, height), "w")
         if API.wallRight():
-            maze.add_wall(row, col, Dir.EAST)
-            API.setWall(*rc_to_xy(row, col, height), "e")
+            maze.add_wall(row, col, dir.rotate(1))
+            # API.setWall(*rc_to_xy(row, col, height), "e")
 
         # update distances
         maze.floodfill()
@@ -192,18 +206,21 @@ def main():
         move = maze.next_move(dir, next_dir)
         if move == Move.FORWARD:
             API.moveForward()
-        elif move == Move.LEFT:
-            API.turnLeft()
-            API.moveForward()
         elif move == Move.RIGHT:
             API.turnRight()
             API.moveForward()
+        elif move == Move.BACKWARD:
+            API.turnRight()
+            API.turnRight()
+            API.moveForward()
+        elif move == Move.LEFT:
+            API.turnLeft()
+            API.moveForward()
 
-        # update position
+        # update position and direction
+        dir = next_dir
         row += dir.dr
         col += dir.dc
-
-    log(maze.next_move(row, col))
 
     # while True:
     #     if not API.wallLeft():
