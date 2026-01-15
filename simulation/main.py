@@ -21,21 +21,16 @@ class Direction(Enum):
     EAST = (0, 1)
     WEST = (0, -1)
 
-def get_neighbour_coords(row, col):
-        """This function returns the north, east, south and west coordinates of the points relative
-        to a point popped out of the queue. For neighbour points that are out of bounds, they will be set to none
-        Returns: A list of 4 tuples of the form (row, col)"""
-        neighbour_points = []
-        neighbour_points.append((row+Direction.NORTH.value[0], col+Direction.NORTH.value[1]))
-        neighbour_points.append((row+Direction.EAST.value[0], col+Direction.EAST.value[1]))
-        neighbour_points.append((row+Direction.SOUTH.value[0], col+Direction.SOUTH.value[1]))
-        neighbour_points.append((row+Direction.WEST.value[0], col+Direction.WEST.value[1]))
-        for i in range(4):
-            if neighbour_points[i][0] < 0 or neighbour_points[i][0] > ROW_NUM-1:
-                neighbour_points[i] = None
-            elif neighbour_points[i][1] < 0 or neighbour_points[i][1] > COLUMN_NUM-1:
-                neighbour_points[i] = None
-        return neighbour_points
+def map_for_simulator(floodfill_distances):
+    """Return a new 2D list flipped vertically so it matches simulator coordinates."""
+    ROW_NUM = len(floodfill_distances)
+    COLUMN_NUM = len(floodfill_distances[0])
+    
+    sim_array = []
+    for r in range(ROW_NUM):
+        sim_array.append(floodfill_distances[ROW_NUM - 1 - r][:])  # take a copy of the row, flipped vertically
+    
+    return sim_array
 
 def check_bounds(row, col, direction):
     """Checks if a neighbouring cell is within the bounds of the maze"""
@@ -165,15 +160,20 @@ def main():
     maze = Maze(ROW_NUM, COLUMN_NUM)
     maze.initialise_wall_variables(maze.hor_walls, maze.vert_walls)
     maze.initialise_floodfill_nums(maze.floodfill_distances, maze._row_num, maze._col_num)
+    #Add the four walls and see what happens
+    maze.vert_walls[3][1] = True
+    maze.vert_walls[4][1] = True
+    maze.vert_walls[2][2] = True
+    maze.hor_walls[2][0] = True
     maze.calculate_floodfill_distances(maze._row_num, maze._col_num, maze.dq, maze.floodfill_distances, maze.hor_walls, maze.vert_walls)
-    
-    
+    for row in maze.floodfill_distances:
+        print(" ".join(str(val) for val in row))
+
+    sim_floodfill = map_for_simulator(maze.floodfill_distances)
+
     for r in range(ROW_NUM):
         for c in range(COLUMN_NUM):
-            sim_row = ROW_NUM - 1 - r  # flip row
-            sim_col = c                # column is the same
-            sim_val = maze.floodfill_distances[r][c]
-            API.setText(sim_row, sim_col, str(sim_val))
+            API.setText(c, r, str(sim_floodfill[r][c]))
 
     #Wall follower algorithm    
     while True:
@@ -182,6 +182,7 @@ def main():
         while API.wallFront():
             API.turnRight()
         API.moveForward()
+        
 
 if __name__ == "__main__":
     main()
