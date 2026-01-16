@@ -3,8 +3,8 @@ import sys
 from collections import deque
 from enum import Enum
 
-ROW_NUM = 5
-COLUMN_NUM = 5
+ROW_NUM = 16
+COLUMN_NUM = 16
 
 ROW_INDEX = 0
 COLUMN_INDEX = 1
