@@ -3,8 +3,8 @@ import sys
 from collections import deque
 from enum import Enum
 
-ROW_NUM = 9
-COLUMN_NUM = 9
+ROW_NUM = 5
+COLUMN_NUM = 5
 
 ROW_INDEX = 0
 COLUMN_INDEX = 1
@@ -131,6 +131,7 @@ class Maze:
                 #Showing uninitialised distances
                 floodfill_distances[i][j] = -1    
         floodfill_distances[row_num//2][col_num//2] = 0
+        self.dq= deque()
     
     def update_walls(self, row, col, direction):
         """Function to update horizontal or vertical walls"""
@@ -234,14 +235,7 @@ class Mouse:
             
         if (API.wallFront()):
             self.maze.update_walls(self.row_pos, self.col_pos, self.direction)
-
-
-            
-        
-
-            
-
-                
+         
 
 def log(string):
     sys.stderr.write("{}\n".format(string))
@@ -255,8 +249,7 @@ def main():
     #Initialise details of the maze
     maze = Maze(ROW_NUM, COLUMN_NUM)
     maze.initialise_wall_variables(maze.hor_walls, maze.vert_walls)
-    maze.initialise_floodfill_nums(maze.floodfill_distances, maze._row_num, maze._col_num)
-    
+    maze.initialise_floodfill_nums(maze.floodfill_distances, maze._row_num, maze._col_num)   
     maze.calculate_floodfill_distances(maze._row_num, maze._col_num, maze.dq, maze.floodfill_distances, maze.hor_walls, maze.vert_walls)
     for row in maze.floodfill_distances:
         print(" ".join(str(val) for val in row))
@@ -274,6 +267,14 @@ def main():
     mouse.turn_right()
     mouse.move_forward()
     mouse.sense_walls()
+    mouse.maze.reset_floodfill_distances(mouse.maze.floodfill_distances, mouse.maze._row_num, mouse.maze._col_num)
+    mouse.maze.calculate_floodfill_distances(mouse.maze._row_num, mouse.maze._col_num, mouse.maze.dq, mouse.maze.floodfill_distances, mouse.maze.hor_walls, mouse.maze.vert_walls)
+    API.clearAllText()
+    for row in mouse.maze.floodfill_distances:
+        print(" ".join(str(val) for val in row))
+    for r in range(ROW_NUM):
+        for c in range(COLUMN_NUM):
+            API.setText(c, ROW_NUM-1-r, mouse.maze.floodfill_distances[r][c])
     mouse.turn_right()
     mouse.move_forward()
     mouse.sense_walls()
