@@ -5,13 +5,20 @@ system control algorithms.
 """
 from micromouse import Micromouse
 from machine import Pin
+import time
 
 mm = Micromouse()
 
 
-if __name__ == "__main__":
-    while True:
-        mm.led_green_set(1)
-        mm.led_red_set(0)
-        ir1Reading = mm.get_ir_values(1)
-        print("IR1 Reading: ", ir1Reading)
+if __name__ == "__main__":   
+    mm.led_green_set(1)
+    mm.led_red_set(0)
+    mm.invert_motor_1()
+    mm.drive_forward(100)
+    time.sleep(5)
+    mm.drive_stop()
+    mm.led_red_set(1)
+    mm.led_green_set(0)
+
+    
+
