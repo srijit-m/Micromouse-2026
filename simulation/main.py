@@ -3,8 +3,8 @@ import sys
 from collections import deque
 from enum import Enum
 
-ROW_NUM = 9
-COLUMN_NUM = 9
+ROW_NUM = 5
+COLUMN_NUM = 5
 
 ROW_INDEX = 0
 COLUMN_INDEX = 1
@@ -145,6 +145,40 @@ class Maze:
                         floodfill_distances[n_row][n_col] = floodfill_distances[row][col]+1
                         dq.append((n_row, n_col))
 
+#Creating a mouse class to implement floodfill dynamically
+class Mouse:
+    def __init__(self, row_pos, col_pos, direction, maze):
+        self.row_pos = row_pos
+        self.col_pos = col_pos
+        #Note that direction will be one of our direction Enums
+        self.direction = direction
+        self.maze = maze
+    def move_forward(self):
+        self.row_pos += self.direction.value[0]
+        self.col_pos += self.direction.value[1]
+    def print_coords(self):
+        """This function is solely for debugging"""
+        print(f"row: {self.row_pos}, col: {self.col_pos}")
+    def turn_right(self):
+        if self.direction == Direction.NORTH:
+            self.direction = Direction.EAST
+        elif self.direction == Direction.EAST:
+            self.direction = Direction.SOUTH
+        elif self.direction == Direction.SOUTH:
+            self.direction = Direction.WEST
+        elif self.direction == Direction.WEST:
+            self.direction = Direction.NORTH
+    def turn_left(self):
+        if self.direction == Direction.NORTH:
+            self.direction = Direction.WEST
+        elif self.direction == Direction.EAST:
+            self.direction = Direction.NORTH
+        elif self.direction == Direction.SOUTH:
+            self.direction = Direction.EAST
+        elif self.direction == Direction.WEST:
+            self.direction = Direction.SOUTH
+            
+
                 
 
 def log(string):
@@ -160,11 +194,7 @@ def main():
     maze = Maze(ROW_NUM, COLUMN_NUM)
     maze.initialise_wall_variables(maze.hor_walls, maze.vert_walls)
     maze.initialise_floodfill_nums(maze.floodfill_distances, maze._row_num, maze._col_num)
-    #Add the four walls and see what happens
-    maze.vert_walls[3][1] = True
-    maze.vert_walls[4][1] = True
-    maze.vert_walls[2][2] = True
-    maze.hor_walls[2][0] = True
+    
     maze.calculate_floodfill_distances(maze._row_num, maze._col_num, maze.dq, maze.floodfill_distances, maze.hor_walls, maze.vert_walls)
     for row in maze.floodfill_distances:
         print(" ".join(str(val) for val in row))
@@ -172,15 +202,20 @@ def main():
     for r in range(ROW_NUM):
         for c in range(COLUMN_NUM):
             API.setText(c, ROW_NUM-1-r, maze.floodfill_distances[r][c])
-            
 
-    #Wall follower algorithm    
-    while True:
-        if not API.wallLeft():
-            API.turnLeft()
-        while API.wallFront():
-            API.turnRight()
-        API.moveForward()
+    mouse = Mouse(ROW_NUM-1, 0, Direction.NORTH, maze)   
+    mouse.move_forward()
+    API.moveForward()
+    mouse.print_coords()
+    mouse.move_forward()
+    API.moveForward()
+    mouse.print_coords()
+    mouse.turn_right()
+    API.turnRight()
+    mouse.move_forward()
+    API.moveForward()
+    mouse.print_coords()
+
         
 
 if __name__ == "__main__":
