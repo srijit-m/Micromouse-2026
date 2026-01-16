@@ -3,8 +3,8 @@ import sys
 from collections import deque
 from enum import Enum
 
-ROW_NUM = 5
-COLUMN_NUM = 5
+ROW_NUM = 9
+COLUMN_NUM = 9
 
 ROW_INDEX = 0
 COLUMN_INDEX = 1
@@ -65,6 +65,22 @@ def can_move(row, col, direction, hor_walls, vert_walls):
             return True
         return False
 
+def compute_left_wall_direction(direction):
+    return {
+        Direction.NORTH: Direction.WEST,
+        Direction.WEST: Direction.SOUTH,
+        Direction.SOUTH: Direction.EAST,
+        Direction.EAST: Direction.NORTH,
+    }[direction]
+
+def compute_right_wall_direction(direction):
+    return {
+        Direction.NORTH: Direction.EAST,
+        Direction.EAST: Direction.SOUTH,
+        Direction.SOUTH: Direction.WEST,
+        Direction.WEST: Direction.NORTH,
+    }[direction]
+
 
 class Maze:
     def __init__(self, row_num, col_num):
@@ -115,6 +131,27 @@ class Maze:
                 #Showing uninitialised distances
                 floodfill_distances[i][j] = -1    
         floodfill_distances[row_num//2][col_num//2] = 0
+    
+    def update_walls(self, row, col, direction):
+        """Function to update horizontal or vertical walls"""
+        if (direction == Direction.NORTH):
+            #We have got a horizontal wall
+            self.hor_walls[row][col] = True
+            API.setWall(col, ROW_NUM-row-1, "n")
+        elif (direction == Direction.EAST):
+            #Vertical wall here
+            self.vert_walls[row][col+1] = True
+            API.setWall(col, ROW_NUM-row-1, "e")
+        elif (direction == Direction.SOUTH):
+            #Horizontal wall here
+            self.hor_walls[row+1][col] = True
+            API.setWall(col, ROW_NUM-row-1, "s")
+        elif (direction == Direction.WEST):
+            #Vertical wall here
+            self.vert_walls[row][col] = True
+            API.setWall(col, ROW_NUM-row-1, "w")
+
+
       
     def calculate_floodfill_distances(self, row_num, col_num, dq, floodfill_distances, hor_walls, vert_walls):
         #Add the goal cell to the queue
@@ -156,9 +193,12 @@ class Mouse:
     def move_forward(self):
         self.row_pos += self.direction.value[0]
         self.col_pos += self.direction.value[1]
+        API.moveForward()
+
     def print_coords(self):
         """This function is solely for debugging"""
         print(f"row: {self.row_pos}, col: {self.col_pos}")
+        print(f"Direction {self.direction}")
     def turn_right(self):
         if self.direction == Direction.NORTH:
             self.direction = Direction.EAST
@@ -168,6 +208,7 @@ class Mouse:
             self.direction = Direction.WEST
         elif self.direction == Direction.WEST:
             self.direction = Direction.NORTH
+        API.turnRight()
     def turn_left(self):
         if self.direction == Direction.NORTH:
             self.direction = Direction.WEST
@@ -177,6 +218,27 @@ class Mouse:
             self.direction = Direction.EAST
         elif self.direction == Direction.WEST:
             self.direction = Direction.SOUTH
+        API.turnLeft()
+    
+    def sense_walls(self):
+        """This function makes the micromouse sense walls directly in front, to the left and 
+        to the right"""
+        if (API.wallLeft()):
+            #Update this in the wall array
+            #Find where the wall actually is (n,e,s,w)
+            wall_dir = compute_left_wall_direction(self.direction)
+            self.maze.update_walls(self.row_pos, self.col_pos, wall_dir)
+        if (API.wallRight()):
+            wall_dir = compute_right_wall_direction(self.direction)
+            self.maze.update_walls(self.row_pos, self.col_pos, wall_dir)
+            
+        if (API.wallFront()):
+            self.maze.update_walls(self.row_pos, self.col_pos, self.direction)
+
+
+            
+        
+
             
 
                 
@@ -204,18 +266,25 @@ def main():
             API.setText(c, ROW_NUM-1-r, maze.floodfill_distances[r][c])
 
     mouse = Mouse(ROW_NUM-1, 0, Direction.NORTH, maze)   
+    mouse.sense_walls()
     mouse.move_forward()
-    API.moveForward()
-    mouse.print_coords()
+    mouse.sense_walls()
     mouse.move_forward()
-    API.moveForward()
-    mouse.print_coords()
+    mouse.sense_walls()
     mouse.turn_right()
-    API.turnRight()
     mouse.move_forward()
-    API.moveForward()
+    mouse.sense_walls()
+    mouse.turn_right()
+    mouse.move_forward()
+    mouse.sense_walls()
+    mouse.turn_left()
+    mouse.move_forward()
+    mouse.sense_walls()
+    mouse.turn_left()
+    mouse.move_forward()
+    mouse.sense_walls()
     mouse.print_coords()
-
+    
         
 
 if __name__ == "__main__":
