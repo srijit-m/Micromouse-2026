@@ -3,8 +3,8 @@ import sys
 from collections import deque
 from enum import Enum
 
-ROW_NUM = 5
-COLUMN_NUM = 5
+ROW_NUM = 9
+COLUMN_NUM = 9
 
 ROW_INDEX = 0
 COLUMN_INDEX = 1
@@ -169,11 +169,10 @@ def main():
     for row in maze.floodfill_distances:
         print(" ".join(str(val) for val in row))
 
-    sim_floodfill = map_for_simulator(maze.floodfill_distances)
-
     for r in range(ROW_NUM):
         for c in range(COLUMN_NUM):
-            API.setText(c, r, str(sim_floodfill[r][c]))
+            API.setText(c, ROW_NUM-1-r, maze.floodfill_distances[r][c])
+            
 
     #Wall follower algorithm    
     while True:
