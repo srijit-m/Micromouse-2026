@@ -42,7 +42,8 @@ def check_bounds(row, col, direction):
     return (new_row, new_col)
 
 def can_move(row, col, direction, hor_walls, vert_walls):
-    """Checks if the neighbouring cell can be accessed (i.e. there are no walls)"""
+    """Checks if the neighbouring cell can be accessed (i.e. there are no walls)
+    Direction is the direction of the cell relative to the current cell"""
     if (direction == Direction.NORTH):
         #For North, we are looking at a horizontal wall
         if (hor_walls[row][col] == False):
@@ -151,8 +152,6 @@ class Maze:
             #Vertical wall here
             self.vert_walls[row][col] = True
             API.setWall(col, ROW_NUM-row-1, "w")
-
-
       
     def calculate_floodfill_distances(self, row_num, col_num, dq, floodfill_distances, hor_walls, vert_walls):
         #Add the goal cell to the queue
@@ -182,6 +181,20 @@ class Maze:
                         (n_row, n_col) = (row+direction.value[ROW_INDEX], col+direction.value[COLUMN_INDEX])
                         floodfill_distances[n_row][n_col] = floodfill_distances[row][col]+1
                         dq.append((n_row, n_col))
+    def find_lowest_neighbours(self, row, col):
+        """This function will return a list of tuples of the form (direction, row, col) that contain the neighbour/s
+        with the lowest floodfill numbers"""
+        neighbour_list = []
+        for direction in [Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST]:
+            bounds_check = check_bounds(row, col, direction)
+            if (bounds_check != False):
+                #There is a valid point
+                p_row, p_col = (row+direction.value[ROW_INDEX], col+direction.value[COLUMN_INDEX])
+                if self.floodfill_distances[p_row][p_col] < self.floodfill_distances[row][col]:
+                    neighbour_list.append((direction, p_row, p_col))
+        return neighbour_list
+
+
 
 #Creating a mouse class to implement floodfill dynamically
 class Mouse:
@@ -189,6 +202,8 @@ class Mouse:
         self.row_pos = row_pos
         self.col_pos = col_pos
         #Note that direction will be one of our direction Enums
+        self.goal_row = ROW_NUM//2
+        self.goal_col = COLUMN_NUM//2
         self.direction = direction
         self.maze = maze
     def move_forward(self):
@@ -251,42 +266,43 @@ def main():
     maze.initialise_wall_variables(maze.hor_walls, maze.vert_walls)
     maze.initialise_floodfill_nums(maze.floodfill_distances, maze._row_num, maze._col_num)   
     maze.calculate_floodfill_distances(maze._row_num, maze._col_num, maze.dq, maze.floodfill_distances, maze.hor_walls, maze.vert_walls)
-    for row in maze.floodfill_distances:
-        print(" ".join(str(val) for val in row))
-
     for r in range(ROW_NUM):
         for c in range(COLUMN_NUM):
             API.setText(c, ROW_NUM-1-r, maze.floodfill_distances[r][c])
 
     mouse = Mouse(ROW_NUM-1, 0, Direction.NORTH, maze)   
-    mouse.sense_walls()
-    mouse.move_forward()
-    mouse.sense_walls()
-    mouse.move_forward()
-    mouse.sense_walls()
-    mouse.turn_right()
-    mouse.move_forward()
-    mouse.sense_walls()
-    mouse.maze.reset_floodfill_distances(mouse.maze.floodfill_distances, mouse.maze._row_num, mouse.maze._col_num)
-    mouse.maze.calculate_floodfill_distances(mouse.maze._row_num, mouse.maze._col_num, mouse.maze.dq, mouse.maze.floodfill_distances, mouse.maze.hor_walls, mouse.maze.vert_walls)
-    API.clearAllText()
-    for row in mouse.maze.floodfill_distances:
-        print(" ".join(str(val) for val in row))
-    for r in range(ROW_NUM):
-        for c in range(COLUMN_NUM):
-            API.setText(c, ROW_NUM-1-r, mouse.maze.floodfill_distances[r][c])
-    mouse.turn_right()
-    mouse.move_forward()
-    mouse.sense_walls()
-    mouse.turn_left()
-    mouse.move_forward()
-    mouse.sense_walls()
-    mouse.turn_left()
-    mouse.move_forward()
-    mouse.sense_walls()
-    mouse.print_coords()
-    
-        
+    #while loop for movement
+    while not ((mouse.row_pos == mouse.goal_row) and (mouse.col_pos == mouse.goal_col)):
+        #Thus keep moving until we reach the centre
+        next_cell = []
+        mouse.sense_walls()
+        #Now find the lowest neighbour cell
+        neighbour_floodfill = mouse.maze.find_lowest_neighbours(mouse.row_pos, mouse.col_pos)
+        print(neighbour_floodfill)
+        for neighbour in neighbour_floodfill:
+            #Check if the neighbour is accessible
+            if (can_move(mouse.row_pos, mouse.col_pos, neighbour[0], mouse.maze.hor_walls, mouse.maze.vert_walls)):
+                next_cell.append(neighbour)
+        #Ok, now we know which cell to move to and its direction relative to the row cell
+        if next_cell:
+            if mouse.direction == next_cell[0][0]:
+                mouse.move_forward()
+            else:
+                while mouse.direction != next_cell[0][0]:
+                    mouse.turn_right()
+                mouse.move_forward()
+        else:
+            #No viable next cell was found
+            #Thus, we need to recalculate floodfill
+            mouse.maze.reset_floodfill_distances(mouse.maze.floodfill_distances, mouse.maze._row_num, mouse.maze._col_num)
+            mouse.maze.calculate_floodfill_distances(mouse.maze._row_num, mouse.maze._col_num, mouse.maze.dq, mouse.maze.floodfill_distances, mouse.maze.hor_walls, mouse.maze.vert_walls)
+            API.clearAllText()
+            for r in range(ROW_NUM):
+                for c in range(COLUMN_NUM):
+                    API.setText(c, ROW_NUM-1-r, maze.floodfill_distances[r][c])
+            continue
+
+      
 
 if __name__ == "__main__":
     main()
