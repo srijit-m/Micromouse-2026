@@ -155,8 +155,10 @@ class Micromouse():
         Parameters:
             power (int): Optional speed to run motors at
         """
+        self.invert_motor_1()
         self.motor_2.spin_forward(power)
         self.motor_1.spin_forward(power)
+        #Added this line to get the correct direction
 
     def drive_backward(self, power = 255):
         """
@@ -165,8 +167,18 @@ class Micromouse():
         Parameters:
             power (int): Optional speed to run motors at
         """
+        self.invert_motor_1()
         self.motor_2.spin_backward(power)
         self.motor_1.spin_backward(power)
+    
+    def turn_right(self, power = 255):
+        self.motor_2.spin_forward(power)
+        self.motor_1.spin_forward(power)
+    
+    def turn_left(self, power = 255):
+        self.motor_2.spin_backward(power)
+        self.motor_1.spin_backward(power)
+
 
     def drive_stop(self):
         """
