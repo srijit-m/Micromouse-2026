@@ -8,6 +8,7 @@ License: MIT License
 """
 from machine import Pin, Timer
 from motor import Motor
+from encoder import Encoder
 
 
 class Micromouse():
@@ -52,6 +53,8 @@ class Micromouse():
         self.motor_2 = Motor(17, 18, 15, 16)
         self.motor_1 = Motor(21, 20, 19, 22)
         self.motor_2.invert_motor()
+        self.encoder_1 = Encoder(19, 22)
+        self.encoder_2 = Encoder(15, 16)
 
         # Other
         self.blink_timer = Timer()
@@ -219,3 +222,11 @@ class Micromouse():
         Toggles the invert direction of motor 2
         """
         self.motor_2.invert_motor()
+
+    """These functions have been added by me due to the faulty encoders"""
+
+    def get_encoder_1_counts(self):
+        return self.encoder_1.read()
+
+    def get_encoder_2_counts(self):
+        return self.encoder_2.read()
