@@ -2,7 +2,6 @@ import API
 import sys
 from collections import deque
 from enum import Enum
-from typing import Optional
 
 
 class Direction(Enum):
@@ -137,10 +136,18 @@ class Maze:
         row, col = position
         return 0 <= row < self.height and 0 <= col < self.width
 
-    def add_wall(self, position: tuple[int, int], direction: Direction) -> None:
-        if self.check_bounds(position):
-            walls, r, c = self.get_wall(position, direction)
-            walls[r][c] = True
+    def add_wall(self, position: tuple[int, int], direction: Direction) -> bool:
+        """Add a wall to the maze and return whether the wall state changed."""
+        if not self.check_bounds(position):
+            return False
+
+        walls, r, c = self.get_wall(position, direction)
+
+        if walls[r][c]:
+            return False
+
+        walls[r][c] = True
+        return True
 
     def is_wall(self, position: tuple[int, int], direction: Direction) -> bool:
         if self.check_bounds(position):
@@ -175,21 +182,40 @@ class Maze:
                     self._dists[nr][nc] = self._dists[position[0]][position[1]] + 1
                     q.append((nr, nc))
 
-    def next_direction(self, position: tuple[int, int]) -> Direction:
-        """Returns the direction to move, based on the current position.
+    def next_direction(
+        self, position: tuple[int, int], heading: Direction
+    ) -> Direction:
+        """Returns the direction to move, based on the current position and direction.
 
-        Assumes that distances have been calculated already
+        When multiple neighbouring cells have the same distance from the goal,
+        the order of precedence is:
+        1. Forward
+        2. Left
+        3. Right
+        4. Backward
         """
-        dists = self.dists
-        min_dist = dists[position[0]][position[1]]
-        next_dir = Direction.NORTH
-        # find neighbouring cell with lowest distance from goal
-        for nr, nc, direction in self.neighbours(position):
-            dist = dists[nr][nc]
-            if dist != -1 and dist < min_dist:
-                min_dist = dist
-                next_dir = direction
-        return next_dir
+        directions = (
+            heading,
+            heading.left,
+            heading.right,
+            heading.rotate(2),
+        )
+
+        row, col = position
+        current_dist = self.dists[row][col]
+
+        for direction in directions:
+            nr = row + direction.dr
+            nc = col + direction.dc
+
+            # check that the neighbour is within bounds and not blocked by a wall
+            if not self.check_bounds((nr, nc)) or self.is_wall(position, direction):
+                continue
+
+            if self.dists[nr][nc] == current_dist - 1:
+                return direction
+
+        return heading
 
     def next_move(self, direction: Direction, target: Direction) -> Move:
         """Returns the required move to make based on the current direction and
@@ -240,16 +266,22 @@ def log(string) -> None:
     sys.stderr.flush()
 
 
-def update_walls(maze: Maze, mouse: Mouse) -> None:
-    """Update the known walls in the maze at the mouse's current position"""
+def update_walls(maze: Maze, mouse: Mouse) -> bool:
+    """Update the known walls in the maze at the mouse's current position.
+
+    Returns:
+        Whether any new walls were added.
+    """
     position = mouse.position
     direction = mouse.direction
+    updated = False
     if API.wallFront():
-        maze.add_wall(position, direction)
+        updated |= maze.add_wall(position, direction)
     if API.wallLeft():
-        maze.add_wall(position, direction.left)
+        updated |= maze.add_wall(position, direction.left)
     if API.wallRight():
-        maze.add_wall(position, direction.right)
+        updated |= maze.add_wall(position, direction.right)
+    return updated
 
 
 def main():
@@ -269,20 +301,22 @@ def main():
             if maze.goal == start:
                 log("Start reached")
                 maze.goal = height // 2, width // 2
+                maze.floodfill()
             else:
                 log("Centre reached")
                 maze.goal = start
+                maze.floodfill()
 
         # update walls and distances
-        update_walls(maze, mouse)
-        maze.floodfill()
+        if update_walls(maze, mouse):
+            maze.floodfill()
 
         # display walls and distances for debugging
         display_walls(maze, mouse)
         display_dists(maze)
 
         # determine next move
-        target_dir = maze.next_direction(mouse.position)
+        target_dir = maze.next_direction(mouse.position, mouse.direction)
         move = maze.next_move(mouse.direction, target_dir)
 
         # update internal mouse state
