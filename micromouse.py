@@ -14,7 +14,7 @@ import math
 import time
 
 #PID global constants
-K_P = 0.12
+K_P = 0.15
 K_D = 0
 #DT is in ms
 DT = 1 
@@ -256,32 +256,33 @@ class Micromouse():
         revs = distance/(math.pi*4.3)
         required_counts = revs*1000
         rounded_counts = int(required_counts)
-        error = rounded_counts
-        #Now need to find error value
-        output = self.distance_PID.update(error)
-        self.drive_forward(int(output))
         while DRIVE_BOOL == True:
             enc1 = self.get_encoder_1_counts()
             enc2 = self.get_encoder_2_counts()
-            current_counts = int((enc1 + enc2) / 2)
-            error = rounded_counts - current_counts
-            if error <= 0:
+            current = int((enc1 + enc2) / 2)
+
+            error = rounded_counts - current
+            if error <= 5:
                 break
+
             output = self.distance_PID.update(error)
-            # Clamp motor power
-            output = max(80, min(255, int(output)))
+            output = max(95, min(200, int(output)))
+
             self.drive_forward(output)
             time.sleep(DT)
+
         self.drive_stop()
 
-
-
-
-    
-
-
-
-
+    def move_forward_encoders(self, distance):
+        self.encoder_1.reset()
+        self.encoder_2.reset()
+        revs = distance/(math.pi*4.3)
+        required_counts = revs*1000
+        rounded_counts = int(required_counts)
+        self.drive_forward(100)
+        while abs(self.get_encoder_1_counts()) < rounded_counts:
+            pass
+        self.drive_stop()
     
     def turn_left_90(self):
         """A 90 degree left turn using encoders"""
