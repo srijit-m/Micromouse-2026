@@ -20,9 +20,9 @@ ENCODER_DIFF_PER_REV = 17680  # drifts about 3mm forward each 360 degrees turn
 
 MM_PER_REV = 3.14159 * WHEEL_DIAMETER
 
-DT = 0.005  # seconds
+PID_DT = 0.01  # seconds
 
-# tested with dt = 0.005
+# tested with dt = 0.01
 KP_DIST = 2.7
 KD_DIST = 0.2
 KP_ANGLE = 0.5
@@ -274,7 +274,7 @@ class Micromouse():
         while running:
             now = time.ticks_us()
             dt = (time.ticks_diff(now, last)) / 1_000_000  # seconds
-            if dt >= 0.01:  # 10 ms
+            if dt >= PID_DT:
                 last = now
 
                 enc1 = self.encoder_1_counts()
