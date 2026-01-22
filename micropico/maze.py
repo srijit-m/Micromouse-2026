@@ -1,24 +1,25 @@
 from ucollections import deque
+from micropython import const
 
 # WALL STATES
-KNOWN_EMPTY = 0
-KNOWN_WALL = 1
-UNKNOWN_WALL = 2
+KNOWN_EMPTY = const(0)
+KNOWN_WALL = const(1)
+UNKNOWN_WALL = const(2)
 
 # DIRECTIONS
-NORTH = 0
-EAST = 1
-SOUTH = 2
-WEST = 3
+NORTH = const(0)
+EAST = const(1)
+SOUTH = const(2)
+WEST = const(3)
 DIRECTIONS = (NORTH, EAST, SOUTH, WEST)
 
 # MOVES
-FORWARD = 0
-TURN_LEFT = 1
-TURN_RIGHT = 2
-TURN_AROUND = 3
+FORWARD = const(0)
+TURN_LEFT = const(1)
+TURN_RIGHT = const(2)
+TURN_AROUND = const(3)
 
-QUEUE_SIZE = 32 # should be enough?
+QUEUE_SIZE = const(32)  # should be enough?
 
 def step(position, direction):
     x, y = position

@@ -1,21 +1,22 @@
+from micropython import const
 from micromouse import Micromouse
 from maze import Maze
 from machine import Pin, Timer
 import utime
 
 # maze config
-MAZE_WIDTH = 9
-MAZE_HEIGHT = 9
+MAZE_WIDTH = const(9)
+MAZE_HEIGHT = const(9)
 MAZE_GOAL = (4, 4)
 
 # modes
-IDLE = 0
-EXPLORE = 1
-SPEEDRUN = 2
+IDLE = const(0)
+EXPLORE = const(1)
+SPEEDRUN = const(2)
 
 # button times
-EXPLORE_DT = 0
-SPEEDRUN_DT = 1000
+EXPLORE_DT = const(0)
+SPEEDRUN_DT = const(1000)
 
 mm = Micromouse()
 

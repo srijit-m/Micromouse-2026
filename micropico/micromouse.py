@@ -1,3 +1,4 @@
+from micropython import const
 from machine import Pin, Timer
 from motor import Motor
 from encoder_portable import Encoder
@@ -9,16 +10,17 @@ import utime
 START_POS = (0, 0)
 START_HEADING = NORTH
 
-WHEEL_DIAMETER = 44  # mm
-ENCODER_1_COUNTS_PER_REV = 4280
-ENCODER_2_COUNTS_PER_REV = 4280
-ENCODER_DIFF_PER_REV = 17825  # drifts about 3mm forward each 360 degrees turn
-
-LEFT_TURN_CORRECTION = 1.004
+WHEEL_DIAMETER = const(44)  # mm
+ENCODER_1_COUNTS_PER_REV = const(4280)
+ENCODER_2_COUNTS_PER_REV = const(4280)
+ENCODER_DIFF_PER_REV = const(17825)  # drifts about 3mm forward each 360 degrees turn
 
 MM_PER_REV = 3.14159 * WHEEL_DIAMETER
 
-PID_DT = 0.01  # seconds
+# compensate for the mouse undershooting left turns
+LEFT_TURN_CORRECTION = 1.004
+
+PID_DT = 0.010  # seconds
 
 # tested with dt = 0.01
 KP_DIST = 2.7
@@ -27,12 +29,12 @@ KP_ANGLE = 0.5
 KD_ANGLE = 0.03
 
 # in counts
-DIST_THRESHOLD = 75  # 2.5mm
-ANGLE_THRESHOLD = 100  # 2 degrees
+DIST_THRESHOLD = const(75)  # 2.5mm
+ANGLE_THRESHOLD = const(100)  # 2 degrees
 
 # min pwm that motors can move at (actually 90 but didn't work well with pid)
-MIN_PWM = 150
-MAX_PWM = 255
+MIN_PWM = const(150)
+MAX_PWM = const(255)
 
 class Micromouse():
     """
@@ -341,7 +343,8 @@ class Micromouse():
 
 
 class Controller:
-    def __init__(self) -> None:
+
+    def __init__(self):
         self._distance_controller = PID(KP_DIST, KD_DIST)
         self._angle_controller = PID(KP_ANGLE, KD_ANGLE)
 
@@ -369,7 +372,7 @@ class Controller:
             return min(value, -min_pwm)
         return 0
 
-    def update(self, encoder_1, encoder_2, dt) -> tuple[int, int]:
+    def update(self, encoder_1, encoder_2, dt):
         dist_error = self._goal_counts - (encoder_1 + encoder_2) / 2
         angle_error = self._goal_difference - (encoder_2 - encoder_1)
 
