@@ -68,28 +68,23 @@ if __name__ == "__main__":
 
     # main code after here
 
-    # while True:
-    #     # mm.move_forward(180)
-    #     # sleep_ms(200)
-    #     for _ in range(8):
-    #         mm.turn(90, 0.5)
-    #         sleep_ms(250)
+    while True:
+        # mm.move_forward(180)
+        # sleep_ms(200)
+        for _ in range(8):
+            mm.turn(90, 1)
+            utime.sleep_ms(250)
 
-    #     for _ in range(8):
-    #         mm.turn(-90, 0.5)
-    #         sleep_ms(250)
+        for _ in range(8):
+            mm.turn(-90, 1)
+            utime.sleep_ms(250)
 
     # back up
-    mm.drive(-150)
-    utime.sleep_ms(350)
-    mm.drive_stop()
-    utime.sleep_ms(250)
+    # mm.move(200)
 
     # for _ in range(5):
     #     mm.move(180)
     #     utime.sleep_ms(200)
-
-    mm.move(900)
 
     # mm.move_forward_encoders(1000)
 
