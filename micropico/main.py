@@ -111,9 +111,23 @@ if __name__ == "__main__":
     # print(f"{e1=}, {e2=}")
     # print(f"{d1=}, {d2=}")
     # ####
-    while True:
-        print(f"Front Sensor: {mm.front_sensor._read_range_single()}, Left Sensor: {mm.left_sensor._read_range_single()}, Right Sensor: {mm.right_sensor._read_range_single()}")
-        time.sleep(0.5)
+    mm.move(180, 1.0)
+    time.sleep(1)
+    mm.move(180, 1.0)
+    time.sleep(1)
+    mm.move(180, 1.0)
+    time.sleep(1)
+    mm.turn(90, 1)
+    time.sleep(1)
+    mm.move(180, 1.0)
+    time.sleep(1)
+    mm.turn(90, 1)
+    mm.move(180, 1.0)
+    time.sleep(1)
+    mm.move(180, 1.0)
+    time.sleep(1)
+    mm.turn(-90, 1.0)
+
 
     mm.led_green_set(0)
     mm.led_red_set(1)
