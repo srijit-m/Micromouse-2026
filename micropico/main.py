@@ -18,6 +18,7 @@ SPEEDRUN = const(2)
 EXPLORE_DT = const(0)
 SPEEDRUN_DT = const(1000)
 
+#Creating micromouse object
 mm = Micromouse()
 
 def select_mode():
