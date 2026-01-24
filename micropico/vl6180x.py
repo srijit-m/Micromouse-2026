@@ -345,41 +345,40 @@ class VL6180X:
         # Ready threshold event'
 
     def _write_8(self, address, data):
-        # Write 1 byte of data from the specified 16-bit register address.
-        self._i2c.writeto(
-            self._address, bytes([(address >> 8) & 0xFF, address & 0xFF, data])
+        self._i2c.writeto_mem(
+            self._address,
+            address,
+            bytes([data]),
+            addrsize=16
         )
 
     def _write_16(self, address, data):
-        # Write a 16-bit big endian value to the specified 16-bit register
-        # address.
-        self._i2c.writeto(
+        self._i2c.writeto_mem(
             self._address,
-            bytes(
-                [
-                    (address >> 8) & 0xFF,
-                    address & 0xFF,
-                    (data >> 8) & 0xFF,
-                    data & 0xFF,
-                ]
-            ),
+            address,
+            bytes([(data >> 8) & 0xFF, data & 0xFF]),
+            addrsize=16
         )
 
     def _read_8(self, address):
-        # Read and return a byte from the specified 16-bit register address.
+        buf = bytearray(1)
         self._i2c.writeto(
-            self._address, bytes([(address >> 8) & 0xFF, address & 0xFF]), False
+            self._address,
+            bytes([(address >> 8) & 0xFF, address & 0xFF])
         )
-        return self._i2c.readfrom(self._address, 1)[0]
+        utime.sleep_us(10)
+        self._i2c.readfrom_into(self._address, buf)
+        return buf[0]
 
     def _read_16(self, address):
-        # Read and return a 16-bit unsigned big endian value read from the
-        # specified 16-bit register address.
+        buf = bytearray(2)
         self._i2c.writeto(
-            self._address, bytes([(address >> 8) & 0xFF, address & 0xFF]), False
+            self._address,
+            bytes([(address >> 8) & 0xFF, address & 0xFF])
         )
-        data = self._i2c.readfrom(self._address, 2)
-        return (data[0] << 8) | data[1]
+        utime.sleep_us(10)
+        self._i2c.readfrom_into(self._address, buf)
+        return (buf[0] << 8) | buf[1]
 
     def set_address(self, new_address):
         """Change the I2C address of the sensor (7-bit)."""

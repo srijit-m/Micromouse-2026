@@ -98,36 +98,50 @@ class Micromouse():
         # Hold both in reset
         self.xshut_left.value(0)
         self.xshut_right.value(0)
-        utime.sleep_ms(50)
+        utime.sleep_ms(500)
 
         # -------------------------
         # LEFT SENSOR
         # -------------------------
+        # LEFT SENSOR
+        self.xshut_left.value(0)
+        utime.sleep_ms(200)
+
         self.xshut_left.value(1)
+        utime.sleep_ms(500)
 
         # Wait until it appears on the bus
-        for _ in range(20):  # up to ~200 ms
+        for _ in range(20):
             if 0x29 in i2c.scan():
                 break
             utime.sleep_ms(10)
+        else:
+            raise RuntimeError("Left VL6180X not detected")
 
         self.left_sensor = VL6180X(i2c, 0x29, 5)
         self.left_sensor.set_address(0x30)
-        utime.sleep_ms(20)
+        utime.sleep_ms(500)
 
         # -------------------------
         # RIGHT SENSOR
         # -------------------------
+        self.xshut_right.value(0)
+        utime.sleep_ms(500)
+
         self.xshut_right.value(1)
+        utime.sleep_ms(500)
 
         for _ in range(20):
             if 0x29 in i2c.scan():
                 break
             utime.sleep_ms(10)
+        else:
+            raise RuntimeError("Right VL6180X not detected")
+        
 
         self.right_sensor = VL6180X(i2c, 0x29, 5)
         self.right_sensor.set_address(0x31)
-        utime.sleep_ms(20)
+        utime.sleep_ms(500)
 
         # -------------------------
         # FRONT SENSOR (separate bus, no XSHUT)
@@ -366,6 +380,45 @@ class Micromouse():
                 break
 
         self.drive_stop()
+    
+    def reset_tof(self, pin):
+        pin.value(0)
+        utime.sleep_ms(20)
+        pin.value(1)
+        utime.sleep_ms(20)
+    
+    def read_tof_sensors(self):
+        """Returns time of flight sensor readings as a tuple in the order front, left, right"""
+        front_sensor_val = self.front_sensor._read_range_single()
+        utime.sleep_ms(50)
+        left_sensor_val = self.left_sensor._read_range_single()
+        utime.sleep_ms(50)
+        right_sensor_val = self.right_sensor._read_range_single()
+        utime.sleep_ms(50)
+        return front_sensor_val, left_sensor_val, right_sensor_val
+    
+    def wall_align_side(self):
+        """This function is for aligning with the left or right walls"""
+        #First get sensor readings
+        _, left_distance, right_distance = self.read_tof_sensors()
+        #Check for a wall to the right
+        if right_distance < 75:
+            #There is a wall to the right
+            if right_distance > 59:
+                self.turn(5, 1.0)               
+            elif right_distance < 47:
+               self.turn(-5, 1.0)
+        elif left_distance < 75: 
+            if left_distance > 53:
+                self.turn(-5, 1.0)
+            elif left_distance < 43:
+                self.turn(5, 1.0)
+    
+    def move_one_cell(self):
+        self.move(180, 1.0)
+        utime.sleep_ms(100)
+        self.wall_align_side()
+        utime.sleep_ms(50)
 
     def move_forward_encoders(self, distance):
         self.reset_encoders()

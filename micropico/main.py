@@ -66,67 +66,47 @@ if __name__ == "__main__":
         pass
     elif mode == SPEEDRUN:
         pass
-
-    # main code after here
+    
     """
-    while True:
-        # mm.move_forward(180)
-        # sleep_ms(200)
-        for _ in range(8):
-            mm.turn(90, 1)
-            utime.sleep_ms(250)
-
-        for _ in range(8):
-            mm.turn(-90, 1)
-            utime.sleep_ms(250)
-    """
-
-    # back up
-    # mm.move(200)
-
-    # for _ in range(5):
-    #     mm.move(180)
-    #     utime.sleep_ms(200)
-
-    # mm.move_forward_encoders(1000)
-
-    # # utime.sleep_ms(500)
-
-    # # mm.move_forward(-138)
-    # mm.turn(360)
-
-    # mm.move_forward_encoders(100)
-
-    # #### TEST ENCODERS
-    # mm.reset_encoders()
-    # utime.sleep_ms(1000)
-    # mm.led_red_set(1)
-
-    # utime.sleep_ms(15000)
-
-    # e1 = mm.encoder_1_counts()
-    # e2 = mm.encoder_2_counts()
-    # d1 = mm.encoder_1_distance()
-    # d2 = mm.encoder_2_distance()
-    # print(f"{e1=}, {e2=}")
-    # print(f"{d1=}, {d2=}")
-    # ####
-    mm.move(180, 1.0)
+    mm.move_one_cell()
     time.sleep(1)
-    mm.move(180, 1.0)
+    mm.move_one_cell()
     time.sleep(1)
-    mm.move(180, 1.0)
+    mm.move_one_cell()
     time.sleep(1)
     mm.turn(90, 1)
     time.sleep(1)
-    mm.move(180, 1.0)
+    mm.move_one_cell()
     time.sleep(1)
     mm.turn(90, 1)
-    mm.move(180, 1.0)
+    mm.move_one_cell()
     time.sleep(1)
-    mm.move(180, 1.0)
+    mm.move_one_cell()
     time.sleep(1)
     mm.turn(-90, 1.0)
+    mm.move_one_cell()
+    time.sleep(1)
+    mm.move_one_cell()
+    mm.turn(-90, 1.0)
+    mm.move_one_cell()
+    time.sleep(1)
+    mm.move_one_cell()
+    time.sleep(1)
+    mm.move_one_cell()
+    time.sleep(1)
+    mm.turn(-90, 1.0)
+    mm.move_one_cell()
+    time.sleep(1)
+    mm.turn(-90, 1.0)
+    time.sleep(1)
+    mm.move_one_cell()
+    mm.move_one_cell()
+    """
+
+    while True:
+        print(f"Front Sensor Distance: {mm.front_sensor._read_range_single()}")
+        time.sleep(0.5)
+
 
 
     mm.led_green_set(0)
