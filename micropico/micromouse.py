@@ -1,11 +1,12 @@
 from micropython import const
-from machine import Pin, Timer
+from machine import Pin, Timer, I2C
 from motor import Motor
 from encoder_portable import Encoder
 from pid import PID
 from grid import *
 import math
 import utime
+from vl6180x import VL6180X
 
 START_POS = (0, 0)
 START_HEADING = NORTH
@@ -93,6 +94,75 @@ class Micromouse():
 
         # Other
         self.blink_timer = Timer()
+
+        i2c = I2C(1, scl=Pin(3), sda=Pin(2))
+
+        self.xshut_left = Pin(7, Pin.OUT)
+        self.xshut_right = Pin(6, Pin.OUT)
+
+        # Hold both in reset
+        self.xshut_left.value(0)
+        self.xshut_right.value(0)
+        utime.sleep_ms(500)
+
+        # -------------------------
+        # LEFT SENSOR
+        # -------------------------
+        # LEFT SENSOR
+        self.xshut_left.value(0)
+        utime.sleep_ms(200)
+
+        self.xshut_left.value(1)
+        utime.sleep_ms(500)
+
+        # Wait until it appears on the bus
+        for _ in range(20):
+            if 0x29 in i2c.scan():
+                break
+            utime.sleep_ms(10)
+        else:
+            raise RuntimeError("Left VL6180X not detected")
+
+        self.left_sensor = VL6180X(i2c, 0x29, 5)
+        self.left_sensor.set_address(0x30)
+        utime.sleep_ms(500)
+
+        # -------------------------
+        # RIGHT SENSOR
+        # -------------------------
+        self.xshut_right.value(0)
+        utime.sleep_ms(500)
+
+        self.xshut_right.value(1)
+        utime.sleep_ms(500)
+
+        for _ in range(20):
+            if 0x29 in i2c.scan():
+                break
+            utime.sleep_ms(10)
+        else:
+            raise RuntimeError("Right VL6180X not detected")
+        
+
+        self.right_sensor = VL6180X(i2c, 0x29, 5)
+        self.right_sensor.set_address(0x31)
+        utime.sleep_ms(500)
+
+        # -------------------------
+        # FRONT SENSOR (separate bus, no XSHUT)
+        # -------------------------
+        self.front_sensor = VL6180X(
+            I2C(0, scl=Pin(1), sda=Pin(0)),
+            0x29,
+            5
+        )
+
+    
+    def get_position(self):
+        return self.position
+
+    def get_heading(self):
+        return self.heading
 
     def led_set(self, red_val, green_val):
         """
@@ -320,6 +390,56 @@ class Micromouse():
                 break
 
         self.drive_stop()
+    
+    def reset_tof(self, pin):
+        pin.value(0)
+        utime.sleep_ms(20)
+        pin.value(1)
+        utime.sleep_ms(20)
+    
+    def read_tof_sensors(self):
+        """Returns time of flight sensor readings as a tuple in the order front, left, right"""
+        front_sensor_val = self.front_sensor._read_range_single()
+        utime.sleep_ms(50)
+        left_sensor_val = self.left_sensor._read_range_single()
+        utime.sleep_ms(50)
+        right_sensor_val = self.right_sensor._read_range_single()
+        utime.sleep_ms(50)
+        return front_sensor_val, left_sensor_val, right_sensor_val
+    
+    def wall_align_side(self):
+        """This function is for aligning with the left or right walls"""
+        #First get sensor readings
+        _, left_distance, right_distance = self.read_tof_sensors()
+        #Check for a wall to the right
+        if right_distance < 75:
+            #There is a wall to the right
+            if right_distance > 57:
+                self.turn(5, 1.0)               
+            elif right_distance < 47:
+               self.turn(-5, 1.0)
+        elif left_distance < 75: 
+            if left_distance > 54:
+                self.turn(-5, 1.0)
+            elif left_distance < 44:
+                self.turn(5, 1.0)
+    
+    def wall_align_front(self):
+        """This function is for aligning with the front wall"""
+        front_distance, _, _ = self.read_tof_sensors()
+        if (front_distance < 80):
+            #There is a wall in front
+            error = front_distance - 60
+            self.move(error, 1.0)
+
+    
+    def move_one_cell(self):
+        self.move(180, 1.0)
+        utime.sleep_ms(100)
+        self.wall_align_side()
+        utime.sleep_ms(50)
+        self.wall_align_front()
+        utime.sleep_ms(50)
 
     def move_cells(self, n=1, speed=1.0):
         """Move forward/backward n cells and update the internal position state"""

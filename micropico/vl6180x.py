@@ -7,6 +7,7 @@ Source: https://github.com/adafruit/Adafruit_CircuitPython_VL6180X/blob/main/ada
 import struct
 import utime
 from micropython import const
+from machine import Pin
 
 # Registers
 _VL6180X_REG_IDENTIFICATION_MODEL_ID = const(0x000)
@@ -89,6 +90,9 @@ class VL6180X:
 
         # Activate history buffer for range measurement
         self._write_8(_VL6180X_REG_SYSTEM_HISTORY_CTRL, 0x01)
+        #1 is the front, 2 is the left, 3 is the right
+            #Front
+            
 
     @property
     def range(self):
@@ -178,7 +182,7 @@ class VL6180X:
 
         while not self._read_8(_VL6180X_REG_RESULT_RANGE_STATUS) & 0x01:
             if utime.ticks_diff(utime.ticks_ms(), start) > timeout:
-                return -1
+                return 255
 
         self._write_8(_VL6180X_REG_SYSRANGE_START, 0x01)
         return self._read_range_continuous()
@@ -190,7 +194,7 @@ class VL6180X:
         # Poll until bit 2 is set
         while not self._read_8(_VL6180X_REG_RESULT_INTERRUPT_STATUS_GPIO) & 0x04:
             if utime.ticks_diff(utime.ticks_ms(), start) > timeout:
-                return -1
+                return 255
 
         # read range in mm
         range_ = self._read_8(_VL6180X_REG_RESULT_RANGE_VAL)
@@ -198,7 +202,7 @@ class VL6180X:
         # clear interrupt
         self._write_8(_VL6180X_REG_SYSTEM_INTERRUPT_CLEAR, 0x07)
 
-        return range_
+        return range_ + self.offset
 
     def read_lux(self, gain) -> float:
         """Read the lux (light value) from the sensor and return it.  Must
@@ -341,41 +345,40 @@ class VL6180X:
         # Ready threshold event'
 
     def _write_8(self, address, data):
-        # Write 1 byte of data from the specified 16-bit register address.
-        self._i2c.writeto(
-            self._address, bytes([(address >> 8) & 0xFF, address & 0xFF, data])
+        self._i2c.writeto_mem(
+            self._address,
+            address,
+            bytes([data]),
+            addrsize=16
         )
 
     def _write_16(self, address, data):
-        # Write a 16-bit big endian value to the specified 16-bit register
-        # address.
-        self._i2c.writeto(
+        self._i2c.writeto_mem(
             self._address,
-            bytes(
-                [
-                    (address >> 8) & 0xFF,
-                    address & 0xFF,
-                    (data >> 8) & 0xFF,
-                    data & 0xFF,
-                ]
-            ),
+            address,
+            bytes([(data >> 8) & 0xFF, data & 0xFF]),
+            addrsize=16
         )
 
     def _read_8(self, address):
-        # Read and return a byte from the specified 16-bit register address.
+        buf = bytearray(1)
         self._i2c.writeto(
-            self._address, bytes([(address >> 8) & 0xFF, address & 0xFF]), False
+            self._address,
+            bytes([(address >> 8) & 0xFF, address & 0xFF])
         )
-        return self._i2c.readfrom(self._address, 1)[0]
+        utime.sleep_us(10)
+        self._i2c.readfrom_into(self._address, buf)
+        return buf[0]
 
     def _read_16(self, address):
-        # Read and return a 16-bit unsigned big endian value read from the
-        # specified 16-bit register address.
+        buf = bytearray(2)
         self._i2c.writeto(
-            self._address, bytes([(address >> 8) & 0xFF, address & 0xFF]), False
+            self._address,
+            bytes([(address >> 8) & 0xFF, address & 0xFF])
         )
-        data = self._i2c.readfrom(self._address, 2)
-        return (data[0] << 8) | data[1]
+        utime.sleep_us(10)
+        self._i2c.readfrom_into(self._address, buf)
+        return (buf[0] << 8) | buf[1]
 
     def set_address(self, new_address):
         """Change the I2C address of the sensor (7-bit)."""

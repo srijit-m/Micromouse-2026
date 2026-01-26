@@ -3,6 +3,7 @@ from micromouse import Micromouse
 from maze import Maze
 from machine import Pin, Timer
 import utime
+import time
 
 # maze config
 MAZE_WIDTH = const(9)
@@ -18,6 +19,7 @@ SPEEDRUN = const(2)
 EXPLORE_DT = const(0)
 SPEEDRUN_DT = const(1000)
 
+#Creating micromouse object
 mm = Micromouse()
 
 def select_mode():
@@ -64,55 +66,40 @@ if __name__ == "__main__":
         pass
     elif mode == SPEEDRUN:
         pass
-
-    # main code after here
-
-    # while True:
-    #     # mm.move_forward(180)
-    #     # sleep_ms(200)
-    #     for _ in range(8):
-    #         mm.turn(90, 0.5)
-    #         sleep_ms(250)
-
-    #     for _ in range(8):
-    #         mm.turn(-90, 0.5)
-    #         sleep_ms(250)
-
-    # back up
-    mm.drive(-150)
-    utime.sleep_ms(350)
-    mm.drive_stop()
-    utime.sleep_ms(250)
-
-    # for _ in range(5):
-    #     mm.move(180)
-    #     utime.sleep_ms(200)
-
-    mm.move(900)
-
-    # mm.move_forward_encoders(1000)
-
-    # # utime.sleep_ms(500)
-
-    # # mm.move_forward(-138)
-    # mm.turn(360)
-
-    # mm.move_forward_encoders(100)
-
-    # #### TEST ENCODERS
-    # mm.reset_encoders()
-    # utime.sleep_ms(1000)
-    # mm.led_red_set(1)
-
-    # utime.sleep_ms(15000)
-
-    # e1 = mm.encoder_1_counts()
-    # e2 = mm.encoder_2_counts()
-    # d1 = mm.encoder_1_distance()
-    # d2 = mm.encoder_2_distance()
-    # print(f"{e1=}, {e2=}")
-    # print(f"{d1=}, {d2=}")
-    # ####
-
-    mm.led_green_set(0)
-    mm.led_red_set(1)
+    
+    
+    mm.move_one_cell()
+    time.sleep(1)
+    mm.move_one_cell()
+    time.sleep(1)
+    mm.move_one_cell()
+    time.sleep(1)
+    mm.turn(90, 1)
+    time.sleep(1)
+    mm.move_one_cell()
+    time.sleep(1)
+    mm.turn(90, 1)
+    mm.move_one_cell()
+    time.sleep(1)
+    mm.move_one_cell()
+    time.sleep(1)
+    mm.turn(-90, 1.0)
+    mm.move_one_cell()
+    time.sleep(1)
+    mm.move_one_cell()
+    mm.turn(-90, 1.0)
+    mm.move_one_cell()
+    time.sleep(1)
+    mm.move_one_cell()
+    time.sleep(1)
+    mm.move_one_cell()
+    time.sleep(1)
+    mm.turn(-90, 1.0)
+    mm.move_one_cell()
+    time.sleep(1)
+    mm.turn(-90, 1.0)
+    time.sleep(1)
+    mm.move_one_cell()
+    mm.move_one_cell()
+    mm.led_green_set(1)
+    mm.led_red_set(0)
