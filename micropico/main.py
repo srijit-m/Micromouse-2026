@@ -66,8 +66,9 @@ if __name__ == "__main__":
         pass
     elif mode == SPEEDRUN:
         pass
-    
-    
+
+    #mm.back_up()
+    #time.sleep(1)   
     mm.move_one_cell()
     time.sleep(1)
     mm.move_one_cell()
