@@ -102,7 +102,9 @@ def search_to(maze, mouse, goal, speed=SEARCH_SPEED):
             maze.floodfill(goal)
 
         # determine next move
-        target_dir = maze.next_direction(mouse.position, mouse.heading)
+        target_dir = maze.next_direction(
+            mouse.position, mouse.heading, assume_wall=True
+        )
         move = next_move(mouse.heading, target_dir)
 
         # move the mouse
@@ -129,7 +131,7 @@ def execute_moves(mouse, moves, speed=FAST_SPEED, interval=0, atomic=False):
     for move, count in moves:
         if move == FORWARD:
             if atomic:
-                for _ in count:
+                for _ in range(count):
                     mouse.move_forward(1, speed=speed)
                     utime.sleep_ms(interval)
                 continue  # skip the other sleep

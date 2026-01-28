@@ -8,7 +8,7 @@ KNOWN_WALL = const(1)
 UNKNOWN_WALL = const(2)
 
 UNKNOWN_DIST = const(255)
-QUEUE_SIZE = const(64)  # I believe 81 is the theoretical max size
+QUEUE_SIZE = const(81)  # 81 should be enough for 9x9 maze
 
 
 class Maze:
@@ -74,7 +74,7 @@ class Maze:
             if walls[idx] == UNKNOWN_WALL:
                 return assume_wall
             return walls[idx] == KNOWN_WALL
-        return False
+        return True  # out of bounds
 
     def floodfill(self, goal, require_valid_path=False):
         """Flood the maze, updating the manhattan distances from start to goal.
@@ -93,8 +93,8 @@ class Maze:
             for direction in DIRECTIONS:
                 neighbour = step(position, direction)
                 if (
-                    self.get_dist(neighbour) == UNKNOWN_DIST
-                    and self.within_bounds(neighbour)
+                    self.within_bounds(neighbour)
+                    and self.get_dist(neighbour) == UNKNOWN_DIST
                     and not self.is_wall(
                         position, direction, assume_wall=require_valid_path
                     )
@@ -102,7 +102,7 @@ class Maze:
                     self.set_dist(neighbour, self.get_dist(position) + 1)
                     q.append(neighbour)
 
-    def next_direction(self, position, heading):
+    def next_direction(self, position, heading, assume_wall=False):
         """Returns the direction to move, based on the current position and
 
         When multiple neighbouring cells have the same distance from the goal,
@@ -120,13 +120,15 @@ class Maze:
         for direction in directions:
             neighbour = step(position, direction)
 
-            if not self.within_bounds(neighbour) or self.is_wall(position, direction):
+            if not self.within_bounds(neighbour) or self.is_wall(
+                position, direction, assume_wall=assume_wall
+            ):
                 continue
 
             if self.get_dist(neighbour) == current_dist - 1:
                 return direction
 
-        return heading
+        return None  # unreachable on valid maze TODO: add error handling
 
     def extract_path(self, position, heading, require_valid_path=True):
         """Extract the shortest path as a list of directions from the given position to the goal.
@@ -141,7 +143,9 @@ class Maze:
         path = []
 
         while position != self.goal:
-            next_dir = self.next_direction(position, heading)
+            next_dir = self.next_direction(
+                position, heading, assume_wall=require_valid_path
+            )
             path.append(next_dir)
 
             position = step(position, next_dir)
