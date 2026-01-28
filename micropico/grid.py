@@ -33,3 +33,17 @@ def right(d):
 
 def behind(d):
     return (d + 2) & 3
+
+
+def next_move(direction, target):
+    """Returns the required move to make based on the current direction and
+    the target direction"""
+    offset = (target - direction) & 3
+
+    if offset == 0:
+        return FORWARD
+    if offset == 1:
+        return TURN_RIGHT
+    if offset == 2:
+        return TURN_AROUND
+    return TURN_LEFT  # offset == 3
