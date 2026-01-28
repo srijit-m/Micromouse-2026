@@ -198,7 +198,7 @@ class Maze:
                     self.set_dist(neighbour, self.get_dist(position) + 1)
                     q.append(neighbour)
 
-    def next_direction(self, position, heading):
+    def next_direction(self, position, heading, assume_wall=False):
         """Returns the direction to move, based on the current position and
 
         When multiple neighbouring cells have the same distance from the goal,
@@ -217,7 +217,9 @@ class Maze:
         for direction in directions:
             neighbour = step(position, direction)
 
-            if not self.within_bounds(neighbour) or self.is_wall(position, direction):
+            if not self.within_bounds(neighbour) or self.is_wall(
+                position, direction, assume_wall=assume_wall
+            ):
                 continue
 
             if self.get_dist(neighbour) == current_dist - 1:
@@ -262,14 +264,16 @@ def update_walls(maze, mouse):
 
 def extract_path(maze, mouse, require_valid_path=True):
     """Extract the shortest path as a list of directions from start to goal"""
-    maze.floodfill(maze.goal, require_valid_path)
+    maze.floodfill(maze.goal, require_valid_path=require_valid_path)
 
     path = []
     position = mouse.start_position
     direction = mouse.start_direction
 
     while position != maze.goal:
-        next_dir = maze.next_direction(position, direction)
+        next_dir = maze.next_direction(
+            position, direction, assume_wall=require_valid_path
+        )
         path.append(next_dir)
 
         position = step(position, next_dir)
@@ -388,7 +392,9 @@ def search_to(maze, mouse, goal):
         display_dists(maze)
 
         # determine next move
-        target_dir = maze.next_direction(mouse.position, mouse.direction)
+        target_dir = maze.next_direction(
+            mouse.position, mouse.direction, assume_wall=True
+        )
         move = next_move(mouse.direction, target_dir)
 
         # move the mouse

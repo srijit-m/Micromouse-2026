@@ -8,10 +8,8 @@ KNOWN_WALL = const(1)
 UNKNOWN_WALL = const(2)
 
 UNKNOWN_DIST = const(255)
-QUEUE_SIZE = const(64)  # I believe 81 is the theoretical max size
+QUEUE_SIZE = const(81)  # 81 should be enough for 9x9 maze
 
-SEARCH_SPEED = 1.0
-FAST_SPEED = 1.0
 
 class Maze:
 
@@ -76,7 +74,7 @@ class Maze:
             if walls[idx] == UNKNOWN_WALL:
                 return assume_wall
             return walls[idx] == KNOWN_WALL
-        return False
+        return True  # out of bounds
 
     def floodfill(self, goal, require_valid_path=False):
         """Flood the maze, updating the manhattan distances from start to goal.
@@ -95,8 +93,8 @@ class Maze:
             for direction in DIRECTIONS:
                 neighbour = step(position, direction)
                 if (
-                    self.get_dist(neighbour) == UNKNOWN_DIST
-                    and self.within_bounds(neighbour)
+                    self.within_bounds(neighbour)
+                    and self.get_dist(neighbour) == UNKNOWN_DIST
                     and not self.is_wall(
                         position, direction, assume_wall=require_valid_path
                     )
@@ -104,7 +102,7 @@ class Maze:
                     self.set_dist(neighbour, self.get_dist(position) + 1)
                     q.append(neighbour)
 
-    def next_direction(self, position, heading):
+    def next_direction(self, position, heading, assume_wall=False):
         """Returns the direction to move, based on the current position and
 
         When multiple neighbouring cells have the same distance from the goal,
@@ -122,165 +120,83 @@ class Maze:
         for direction in directions:
             neighbour = step(position, direction)
 
-            if not self.within_bounds(neighbour) or self.is_wall(position, direction):
+            if not self.within_bounds(neighbour) or self.is_wall(
+                position, direction, assume_wall=assume_wall
+            ):
                 continue
 
             if self.get_dist(neighbour) == current_dist - 1:
                 return direction
 
-        return heading
+        return None  # unreachable on valid maze TODO: add error handling
 
+    def extract_path(self, position, heading, require_valid_path=True):
+        """Extract the shortest path as a list of directions from the given position to the goal.
 
-def next_move(direction, target):
-    """Returns the required move to make based on the current direction and
-    the target direction"""
-    offset = (target - direction) & 3
+        When require_valid_path is True, unknown walls are treated as blocked.
+        When False, unknown walls are treated as open.
 
-    if offset == 0:
-        return FORWARD
-    if offset == 1:
-        return TURN_RIGHT
-    if offset == 2:
-        return TURN_AROUND
-    return TURN_LEFT  # offset == 3
+        If the paths extracted under both assumptions are identical, then the extracted path is optimal.
+        """
+        self.floodfill(self.goal, require_valid_path)
 
+        path = []
 
-def update_walls(maze, mouse):
-    """Update the known walls in the maze at the mouse's current position.
+        while position != self.goal:
+            next_dir = self.next_direction(
+                position, heading, assume_wall=require_valid_path
+            )
+            path.append(next_dir)
 
-    Returns:
-        Whether any new walls were added.
-    """
-    position = mouse.position
-    heading = mouse.heading
-    updated = False
+            position = step(position, next_dir)
+            heading = next_dir
 
-    front_wall_state = KNOWN_WALL if mouse.wall_front() else KNOWN_EMPTY
-    left_wall_state = KNOWN_WALL if mouse.wall_left() else KNOWN_EMPTY
-    right_wall_state = KNOWN_WALL if mouse.wall_right() else KNOWN_EMPTY
+        return path
 
-    updated |= maze.update_wall(position, heading, front_wall_state)
-    updated |= maze.update_wall(position, left(heading), left_wall_state)
-    updated |= maze.update_wall(position, right(heading), right_wall_state)
-    return updated
+    @staticmethod
+    def compress_path(path):
+        """Encode the direction sequence in a path as (direction, count) tuples."""
+        if not path:
+            return []
 
+        compressed = []
+        last_dir = path[0]
+        count = 1
 
-def extract_path(maze, position, heading, require_valid_path=True):
-    """Extract the shortest path as a list of directions from the given position to the goal.
+        for direction in path[1:]:
+            if direction == last_dir:
+                count += 1
+            else:
+                compressed.append((last_dir, count))
+                last_dir = direction
+                count = 1
 
-    When require_valid_path is True, unknown walls are treated as blocked.
-    When False, unknown walls are treated as open.
+        compressed.append((last_dir, count))
+        return compressed
 
-    If the paths extracted under both assumptions are identical, then the extracted path is optimal.
-    """
-    maze.floodfill(maze.goal, require_valid_path)
+    @staticmethod
+    def path_to_moves(path, start_dir):
+        """Convert a compressed direction path into executable move commands."""
+        moves = []
+        prev_dir = start_dir
+        for direction, count in path:
+            move = next_move(prev_dir, direction)
+            if move != FORWARD:
+                moves.append((move, 1))
+            moves.append((FORWARD, count))
+            prev_dir = direction
+        return moves
 
-    path = []
+    def extract_moves(self, position, heading):
+        """Return a list of executable moves from the given position to the maze goal
+        and whether the resulting path is optimal.
+        """
+        path_relaxed = self.extract_path(position, heading, require_valid_path=False)
+        path_strict = self.extract_path(position, heading, require_valid_path=True)
 
-    while position != maze.goal:
-        next_dir = maze.next_direction(position, heading)
-        path.append(next_dir)
+        optimal = path_relaxed == path_strict
 
-        position = step(position, next_dir)
-        heading = next_dir
+        compressed = self.compress_path(path_strict)
+        moves = self.path_to_moves(compressed, heading)
 
-    return path
-
-
-def compress_path(path):
-    """Encode the direction sequence in a path as (direction, count) tuples."""
-    if not path:
-        return []
-
-    compressed = []
-    last_dir = path[0]
-    count = 1
-
-    for direction in path[1:]:
-        if direction == last_dir:
-            count += 1
-        else:
-            compressed.append((last_dir, count))
-            last_dir = direction
-            count = 1
-
-    compressed.append((last_dir, count))
-    return compressed
-
-
-def path_to_moves(path, start_dir):
-    """Convert a compressed direction path into executable move commands."""
-    moves = []
-    prev_dir = start_dir
-    for direction, count in path:
-        move = next_move(prev_dir, direction)
-        if move != FORWARD:
-            moves.append((move, 1))
-        moves.append((FORWARD, count))
-        prev_dir = direction
-    return moves
-
-
-def extract_moves(maze, position, heading):
-    """Return a list of executable moves from the given position to the maze goal
-    and whether the resulting path is optimal.
-    """
-    path_relaxed = extract_path(maze, position, heading, require_valid_path=False)
-    path_strict = extract_path(maze, position, heading, require_valid_path=True)
-
-    optimal = path_relaxed == path_strict
-
-    compressed = compress_path(path_strict)
-    moves = path_to_moves(compressed, heading)
-
-    return moves, optimal
-
-
-def move_mouse(mouse, move, speed=1.0):
-    if move == FORWARD:
-        mouse.move_forward(1, speed=speed)
-    elif move == TURN_RIGHT:
-        mouse.turn_right(speed=speed)
-    elif move == TURN_AROUND:
-        mouse.turn_around(speed=speed)
-    elif move == TURN_LEFT:
-        mouse.turn_left(speed=speed)
-
-
-def search_to(maze, mouse, goal, speed=SEARCH_SPEED):
-    """Move to the target position at a safe speed while mapping the maze."""
-
-    while mouse.position != goal:
-        # update walls and distances
-        if update_walls(maze, mouse):
-            maze.floodfill(goal)
-
-        # determine next move
-        target_dir = maze.next_direction(mouse.position, mouse.heading)
-        move = next_move(mouse.heading, target_dir)
-
-        # move the mouse
-        move_mouse(mouse, move, speed=speed)
-
-
-def search_maze(maze, mouse):
-    """Search to the goal, then search back to the start.
-
-    Assumes that the mouse is at the start position and orientation.
-    """
-    search_to(maze, mouse, maze.goal)
-    search_to(maze, mouse, mouse.start_pos)
-    mouse.turn_to_face(mouse.start_heading)
-
-
-def speed_run(mouse, moves, speed=FAST_SPEED):
-    """Execute a precomputed move sequence at speed."""
-    for move, count in moves:
-        if move == FORWARD:
-            mouse.move_forward(count, speed=speed)
-        elif move == TURN_RIGHT:
-            mouse.turn_right(speed=speed)
-        elif move == TURN_AROUND:
-            mouse.turn_around(speed=speed)
-        elif move == TURN_LEFT:
-            mouse.turn_left(speed=speed)
+        return moves, optimal
