@@ -8,7 +8,7 @@ import math
 import utime
 from vl6180x import VL6180X
 
-START_POS = (0, 0)
+START_POS = (4, 0)
 START_HEADING = NORTH
 
 CELL_SIZE_MM = 180
@@ -47,9 +47,10 @@ MAX_PWM = const(255)
 TOF_DISTANCE = 50
 TOF_DISTANCE_BAND = 5
 WALL_THRESHOLD = 100
-FRONT_BACKUP_DISTANCE = 63
+FRONT_BACKUP_DISTANCE = 65
 CENTRE_ALIGN_DISTANCE = 20
 CENTRE_ALIGN_ANGLE = 0
+TOF_UPPER_DISTANCE_BAND = 18
 
 
 class Micromouse():
@@ -429,10 +430,10 @@ class Micromouse():
         """This will map a distance error (absolute value) of 5mm to 12mm
         to a turn angle of 3 to 7 degrees"""
         # If error is larger than 14mm, return 10
-        if error > 14:
-            return 10
+        if error > 12:
+            return 6
         # Constrain error
-        return self.map_range(error, 5, 12, 2, 7)
+        return self.map_range(error, 5, 12, 2, 6)
 
     def read_tof_sensors(self):
         """Returns time of flight sensor readings as a tuple in the order front, left, right"""
@@ -467,11 +468,51 @@ class Micromouse():
                 self.turn(turn_angle, 0.7)
 
         self.drive_stop()
+    
+    def wall_align_two_walls(self):
+        """This function is for aligning with the left or right walls. The key difference here is that the mouse only aligns
+        if there are two walls present. This should reduce the errors present"""
+        # First get sensor readings
+        _, left_distance, right_distance = self.read_tof_sensors()
+        # Check for a wall to the right
+        if left_distance < WALL_THRESHOLD and right_distance < WALL_THRESHOLD:
+            #There are walls on both sides
+            #check left error and right error
+            error_right = abs(right_distance - 50)
+            error_left = abs(left_distance -50)
+            if error_right > TOF_DISTANCE_BAND:
+                turn_angle = self.map_tof_distance_error(error_right)
+                if right_distance > TOF_DISTANCE+TOF_DISTANCE_BAND:
+                    self.turn(turn_angle, 0.7)                                                  
+                elif right_distance < TOF_DISTANCE-TOF_DISTANCE_BAND:
+                    self.turn(-turn_angle, 0.7)
+
+            elif error_left > TOF_DISTANCE_BAND:
+                turn_angle = self.map_tof_distance_error(error_left)
+                if left_distance > TOF_DISTANCE+TOF_DISTANCE_BAND:
+                    self.turn(-turn_angle, 0.7)
+                elif left_distance < TOF_DISTANCE-TOF_DISTANCE_BAND:
+                    self.turn(turn_angle, 0.7)
+        #Ok am applying left and right correction but only for extreme cases 
+        elif right_distance < WALL_THRESHOLD:
+            if right_distance > TOF_DISTANCE+TOF_UPPER_DISTANCE_BAND:
+                self.turn(4, 0.7)                                                  
+            elif right_distance < TOF_DISTANCE-TOF_UPPER_DISTANCE_BAND:
+                self.turn(-4, 0.7)
+        elif left_distance < WALL_THRESHOLD:
+            if left_distance > TOF_DISTANCE+TOF_DISTANCE_BAND:
+                self.turn(-4, 0.7)
+            elif left_distance < TOF_DISTANCE-TOF_DISTANCE_BAND:
+                self.turn(4, 0.7)
+
+            
+    
+
 
     def wall_align_front(self):
         """This function is for aligning with the front wall"""
         front_distance, _, _ = self.read_tof_sensors()
-        if (front_distance < WALL_THRESHOLD):
+        if (front_distance < WALL_THRESHOLD+20):
             # There is a wall in front
             error = front_distance - FRONT_BACKUP_DISTANCE
             self.move(error, 0.7)
@@ -490,7 +531,8 @@ class Micromouse():
 
         # TODO cleanup
         utime.sleep_ms(100)
-        self.wall_align_side()
+        #self.wall_align_side()
+        self.wall_align_two_walls()
         utime.sleep_ms(100)
         self.wall_align_front()
 

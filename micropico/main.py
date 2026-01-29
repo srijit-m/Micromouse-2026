@@ -180,6 +180,7 @@ if __name__ == "__main__":
     while True:
         mode = select_mode()
 
+
         if mode == EXPLORE:
             # align
             mm.move_to_centre()
@@ -198,86 +199,4 @@ if __name__ == "__main__":
 
         utime.sleep(1)  # so you can see the green led :)
 
-    # mm.back_up()
-    # time.sleep(1)
-
-    # for _ in range(8):
-    #     mm.turn_right_90()
-    #     utime.sleep_ms(250)
-
-    # for _ in range(8):
-    #     mm.turn_left_90()
-    #     utime.sleep_ms(250)
-
-    # exit()
-
-    """
-    mm.move_to_centre()
-    time.sleep(0.5)
-
-    for _ in range(4):
-        mm.move_one_cell()
-        time.sleep(1)
     
-    mm.turn_right_90()
-    time.sleep(1)
-
-    mm.turn_right_90()
-    time.sleep(1)
-
-    mm.back_up()
-    time.sleep(0.5)
-
-
-    mm.move_to_centre()
-    time.sleep(0.5)
-
-    for _ in range(4):
-        mm.move_one_cell()
-        time.sleep(1)
-
-    mm.turn_right_90()
-    time.sleep(1)
-
-    mm.turn_right_90()
-    time.sleep(1)
-    exit()
-    """
-
-    mm.move_to_centre(0.5)
-    time.sleep(0.5)   
-    mm.move_one_cell()
-    time.sleep(1)
-    mm.move_one_cell()
-    time.sleep(1)
-    mm.move_one_cell()
-    time.sleep(1)
-    mm.turn(90, 1)
-    time.sleep(1)
-    mm.move_one_cell()
-    time.sleep(1)
-    mm.turn(90, 1)
-    mm.move_one_cell()
-    time.sleep(1)
-    mm.move_one_cell()
-    time.sleep(1)
-    mm.turn(-90, 1.0)
-    mm.move_one_cell()
-    time.sleep(1)
-    mm.move_one_cell()
-    mm.turn(-90, 1.0)
-    mm.move_one_cell()
-    time.sleep(1)
-    mm.move_one_cell()
-    time.sleep(1)
-    mm.move_one_cell()
-    time.sleep(1)
-    mm.turn(-90, 1.0)
-    mm.move_one_cell()
-    time.sleep(1)
-    mm.turn(-90, 1.0)
-    time.sleep(1)
-    mm.move_one_cell()
-    mm.move_one_cell()
-    mm.led_green_set(1)
-    mm.led_red_set(0)
