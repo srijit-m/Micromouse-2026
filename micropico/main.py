@@ -184,6 +184,9 @@ if __name__ == "__main__":
         if mode == EXPLORE:
             # align
             mm.move_to_centre()
+            search_to(maze, mm, (4,0))
+            utime.sleep(2)
+            #mm.move_to_centre()
             utime.sleep_ms(100)
 
             search_maze(maze, mm)

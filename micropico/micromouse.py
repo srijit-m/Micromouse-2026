@@ -11,7 +11,7 @@ from vl6180x import VL6180X
 START_POS = (0, 0)
 START_HEADING = NORTH
 
-CELL_SIZE_MM = 185
+CELL_SIZE_MM = 183
 
 WHEEL_DIAMETER = const(44)  # mm
 ENCODER_1_COUNTS_PER_REV = const(4280)
@@ -263,34 +263,6 @@ class Micromouse():
             callback=lambda t: self.led_toggle_green(),
         )
 
-    def get_ir_values(self, index=0):
-        """
-        Gets the current values of the infrared object detector sensors.
-
-        Parameters:
-            index (int): The number of the IR sensor to read. 1 for IR1
-            and 3 for IR3
-
-        Returns:
-            Union[(bool, bool, bool), bool]:
-                The IR sensor readings in the order 1, 2, 3 if no
-                index is provided, otherwise the result of the specified
-                sensor. True indicates an object detected.
-        """
-        if index >= 4:
-            raise IndexError("IR Sensor index should not exceed 2.")
-        sensor_1 = self.ir_1.value() == 0
-        sensor_2 = self.ir_2.value() == 0
-        sensor_3 = self.ir_3.value() == 0
-        if index == 1:
-            return sensor_1
-        elif index == 2:
-            return sensor_2
-        elif index == 3:
-            return sensor_3
-        elif index < 1:
-            return (sensor_1, sensor_2, sensor_3)
-
     def wall_front(self):
         distance = self.front_sensor._read_range_single()
         return distance < WALL_THRESHOLD
@@ -384,6 +356,7 @@ class Micromouse():
         self.update_motors(speed)
 
     def move_to_centre(self, speed=0.5):
+        """Moves the mouse forward a set distance at the start of a run or when fully backed up"""
         self.reset_encoders()
         self.controller.reset()
         # After wiring the micromouse up again, I put the motors the
@@ -449,35 +422,10 @@ class Micromouse():
         right_sensor_val = self.right_sensor._read_range_single()
         return front_sensor_val, left_sensor_val, right_sensor_val
 
-    def wall_align_side(self):
-        """This function is for aligning with the left or right walls"""
-        # First get sensor readings
-        _, left_distance, right_distance = self.read_tof_sensors()
-        # Check for a wall to the right
-        if right_distance <  WALL_THRESHOLD:
-            # There is a wall to the right
-            error = abs(right_distance - 50)
-            turn_angle = self.map_tof_distance_error(error)
-
-            if right_distance > TOF_DISTANCE+TOF_DISTANCE_BAND:
-                self.turn(turn_angle, 0.7)                                                  
-            elif right_distance < TOF_DISTANCE-TOF_DISTANCE_BAND:
-                self.turn(-turn_angle, 0.7)
-
-        elif left_distance < WALL_THRESHOLD: 
-            error = abs(left_distance - 50)
-            turn_angle = self.map_tof_distance_error(error)
-
-            if left_distance > TOF_DISTANCE+TOF_DISTANCE_BAND:
-                self.turn(-turn_angle, 0.7)
-            elif left_distance < TOF_DISTANCE-TOF_DISTANCE_BAND:
-                self.turn(turn_angle, 0.7)
-
-        self.drive_stop()
-    
     def wall_align_two_walls(self):
         """This function is for aligning with the left or right walls. The key difference here is that the mouse only aligns
-        if there are two walls present. This should reduce the errors present"""
+        if there are two walls present. This should reduce the errors present. Also, the function does adjust if there is only
+        a left wall or only a right wall but this only occurs if the mouse is very far/very close to a single wall"""
         # First get sensor readings
         _, left_distance, right_distance = self.read_tof_sensors()
         # Check for a wall to the right
@@ -515,10 +463,6 @@ class Micromouse():
             elif left_distance < TOF_DISTANCE-TOF_DISTANCE_BAND:
                 self.turn(turn_angle, 0.7)
 
-            
-    
-
-
     def wall_align_front(self):
         """This function is for aligning with the front wall"""
         front_distance, _, _ = self.read_tof_sensors()
@@ -527,13 +471,6 @@ class Micromouse():
             error = front_distance - FRONT_BACKUP_DISTANCE
             self.move(error, 0.7)
 
-    def move_one_cell(self):
-        self.move(180, 1.0)
-        utime.sleep_ms(200)
-        self.wall_align_side()
-        utime.sleep_ms(200)
-        self.wall_align_front()
-        utime.sleep_ms(100)
 
     def move_cells(self, n=1, speed=1.0):
         """Move forward/backward n cells and update the internal position state"""
@@ -578,13 +515,16 @@ class Micromouse():
 
     def turn_around(self, speed=1.0):
         """Turn 180 degrees and update the internal heading state"""
+        front_wall_distance = self.front_sensor._read_range_single()
+        utime.sleep_ms(10)
         self.turn(180, speed)
 
-        # realign
+        # realign only if there was a wall available
         utime.sleep_ms(50)
-        self.back_up()
-        utime.sleep_ms(50)
-        self.move_to_centre()
+        if (front_wall_distance < WALL_THRESHOLD+20):
+            self.back_up()
+            utime.sleep_ms(50)
+            self.move_to_centre()
 
         self.heading = behind(self.heading)
 
@@ -609,28 +549,6 @@ class Micromouse():
                 break
             prev_counts = counts
         self.drive_stop()
-
-    def move_forward_encoders(self, distance):
-        self.reset_encoders()
-        revs = distance / (math.pi * WHEEL_DIAMETER)
-        required_counts = revs * ENCODER_1_COUNTS_PER_REV
-        rounded_counts = int(required_counts)
-        self.drive(255)
-        while abs(self.encoder_1_counts()) < rounded_counts:
-            # print(f"{self.encoder_1_counts()}")
-            pass
-        self.drive_stop()
-
-    def turn_left_encoders(self, power):
-        """A 90 degree left turn using encoders"""
-        self.reset_encoders()
-        difference = 0
-        goal_difference = 985
-        self.turn_left_90(power)
-        while (difference < goal_difference):
-            difference = self.encoder_1_counts() - self.encoder_2_counts()
-        self.drive_stop()
-
 
 class Controller:
 
