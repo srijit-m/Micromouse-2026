@@ -8,10 +8,10 @@ import math
 import utime
 from vl6180x import VL6180X
 
-START_POS = (4, 0)
+START_POS = (0, 0)
 START_HEADING = NORTH
 
-CELL_SIZE_MM = 180
+CELL_SIZE_MM = 185
 
 WHEEL_DIAMETER = const(44)  # mm
 ENCODER_1_COUNTS_PER_REV = const(4280)
@@ -45,7 +45,7 @@ MAX_PWM = const(255)
 
 # TOF Sensor Constants in mm
 TOF_DISTANCE = 50
-TOF_DISTANCE_BAND = 5
+TOF_DISTANCE_BAND = 7
 WALL_THRESHOLD = 100
 FRONT_BACKUP_DISTANCE = 65
 CENTRE_ALIGN_DISTANCE = 20
@@ -431,9 +431,15 @@ class Micromouse():
         to a turn angle of 3 to 7 degrees"""
         # If error is larger than 14mm, return 10
         if error > 12:
-            return 6
+            return 5
         # Constrain error
-        return self.map_range(error, 5, 12, 2, 6)
+        return self.map_range(error, 7, 13, 2, 4.5)
+    
+    def map_tof_side_wall_distance_error(self, error):
+        """This function is for mapping an error of 18mm to 5 degrees and 25mm to 8 degrees"""
+        if error > 25:
+            return 8
+        return self.map_range(error, 18, 25, 5, 8)
 
     def read_tof_sensors(self):
         """Returns time of flight sensor readings as a tuple in the order front, left, right"""
@@ -495,15 +501,19 @@ class Micromouse():
                     self.turn(turn_angle, 0.7)
         #Ok am applying left and right correction but only for extreme cases 
         elif right_distance < WALL_THRESHOLD:
+            error_right = abs(right_distance - 50)
+            turn_angle = self.map_tof_side_wall_distance_error(error_right)
             if right_distance > TOF_DISTANCE+TOF_UPPER_DISTANCE_BAND:
-                self.turn(4, 0.7)                                                  
+                self.turn(turn_angle, 0.7)                                                  
             elif right_distance < TOF_DISTANCE-TOF_UPPER_DISTANCE_BAND:
-                self.turn(-4, 0.7)
+                self.turn(-turn_angle, 0.7)
         elif left_distance < WALL_THRESHOLD:
+            error_left = abs(left_distance - 50)
+            turn_angle = self.map_tof_side_wall_distance_error(error_left)
             if left_distance > TOF_DISTANCE+TOF_DISTANCE_BAND:
-                self.turn(-4, 0.7)
+                self.turn(-turn_angle, 0.7)
             elif left_distance < TOF_DISTANCE-TOF_DISTANCE_BAND:
-                self.turn(4, 0.7)
+                self.turn(turn_angle, 0.7)
 
             
     
