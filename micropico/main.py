@@ -154,41 +154,14 @@ def execute_moves(mouse, moves, speed=FAST_SPEED, interval=0, atomic=False):
 
 if __name__ == "__main__":
     maze = Maze(MAZE_WIDTH, MAZE_HEIGHT, MAZE_GOAL)
-
-    # # TEST ALGORITHM
-    # maze.update_wall((0, 0), EAST, KNOWN_WALL)
-    # maze.update_wall((0, 1), EAST, KNOWN_WALL)
-    # maze.update_wall((0, 2), EAST, KNOWN_WALL)
-    # maze.update_wall((0, 4), EAST, KNOWN_WALL)
-    # maze.update_wall((2, 2), EAST, KNOWN_WALL)
-    # maze.update_wall((2, 2), SOUTH, KNOWN_WALL)
-    # maze.update_wall((2, 2), WEST, KNOWN_WALL)
-    # maze.update_wall((2, 3), EAST, KNOWN_WALL)
-    # maze.update_wall((2, 3), WEST, KNOWN_WALL)
-    # maze.update_wall((2, 4), WEST, KNOWN_WALL)
-    # maze.update_wall((4, 0), WEST, KNOWN_WALL)
-    # maze.update_wall((4, 1), WEST, KNOWN_WALL)
-    # maze.update_wall((4, 2), NORTH, KNOWN_WALL)
-
-    # assert maze.extract_path(
-    #     mm.start_pos, mm.start_heading, require_valid_path=False
-    # ) == [0, 0, 0, 1, 2, 2, 1, 1, 0, 0, 0, 3, 2, 2]
-    # # END TEST
-
     moves = []
 
     while True:
         mode = select_mode()
-
-
         if mode == EXPLORE:
             # align
             mm.move_to_centre()
-            search_to(maze, mm, (4,0))
-            utime.sleep(2)
-            #mm.move_to_centre()
             utime.sleep_ms(100)
-
             search_maze(maze, mm)
             moves, optimal = maze.extract_moves(mm.start_pos, mm.start_heading)
             if optimal:
