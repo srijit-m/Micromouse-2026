@@ -158,6 +158,15 @@ if __name__ == "__main__":
 
     while True:
         mode = select_mode()
+
+        # for _ in range (3):
+        #     for _ in range(4):
+        #         mm.move_cells(1, 1.0)
+        #     mm.turn_around()
+        #     for _ in range(4):
+        #         mm.move_cells(1, 1.0)
+        #     mm.turn_around()
+        
         if mode == EXPLORE:
             # align
             mm.move_to_centre()
