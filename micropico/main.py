@@ -166,10 +166,14 @@ if __name__ == "__main__":
         #     for _ in range(4):
         #         mm.move_cells(1, 1.0)
         #     mm.turn_around()
-        
+        mm.move_to_centre()
+        search_to(maze, mm, (0,4))
+        utime.sleep(1)
+        search_to(maze, mm, (4,4))
+        utime.sleep(1)
+        search_to(maze, mm, (4,0))
         if mode == EXPLORE:
             # align
-            mm.move_to_centre()
             utime.sleep_ms(100)
             search_maze(maze, mm)
             moves, optimal = maze.extract_moves(mm.start_pos, mm.start_heading)

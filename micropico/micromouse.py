@@ -404,6 +404,8 @@ class Micromouse():
         """This will map a distance error (absolute value) of 5mm to 12mm
         to a turn angle of 3 to 7 degrees"""
         # If error is larger than 14mm, return 10
+        if error > 19:
+            return 7
         if error > 15:
             return 6
         if error > 13:
@@ -414,7 +416,7 @@ class Micromouse():
     def map_tof_side_wall_distance_error(self, error):
         """This function is for mapping an error of 18mm to 5 degrees and 25mm to 8 degrees"""
         if error > 25:
-            return 8
+            return 9
         return self.map_range(error, 15, 25, 3, 8)
 
     def read_tof_sensors(self):
