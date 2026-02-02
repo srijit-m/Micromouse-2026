@@ -27,12 +27,16 @@ LEFT_TURN_CORRECTION = 1.004
 ANGLE_BIAS = 0 # this is in degrees now # it was 20 counts
 
 PID_DT = 0.010  # seconds
+TOF_PID_DT = 0.03 # seconds
 
 # tested with dt = 0.01
 KP_DIST = 2.7
 KD_DIST = 0.25
 KP_ANGLE = 0.5
 KD_ANGLE = 0.03
+KP_TOF = 6.25
+KD_TOF = 1.1
+KI_TOF = 1.6
 
 # in counts
 DIST_THRESHOLD = const(75)  # 2.5mm
@@ -51,9 +55,6 @@ FRONT_BACKUP_DISTANCE = 65
 CENTRE_ALIGN_DISTANCE = 20
 CENTRE_ALIGN_ANGLE = 0
 TOF_UPPER_DISTANCE_BAND = 15
-TOF_RETRY_WEIGHTING = 0
-
-
 class Micromouse():
     """
     Represents the physical Micromouse device in code.
@@ -82,6 +83,9 @@ class Micromouse():
         if hasattr(self, 'exists'):
             return
         self.exists = True
+
+        #Just to debug
+        self.tof_log = []
 
         self.start_pos = START_POS
         self.start_heading = START_HEADING
@@ -370,9 +374,12 @@ class Micromouse():
     def update_motors(self, speed=1.0):
         """Run PID control loop on motors until the mouse is at the goal"""
         last = utime.ticks_us()
+        tof_last = utime.ticks_us()
         while True:
             now = utime.ticks_us()
+            tof_now = utime.ticks_us()
             dt = (utime.ticks_diff(now, last)) / 1_000_000  # seconds
+            tof_dt = (utime.ticks_diff(tof_now, tof_last)) / 1_000_000
             if dt >= PID_DT:
                 last = now
 
@@ -385,12 +392,35 @@ class Micromouse():
 
                 self.motor_1.spin_power(int(pwm_1 * speed))
                 self.motor_2.spin_power(int(pwm_2 * speed))
+            
+            if tof_dt >= TOF_PID_DT:
+                tof_last = tof_now
+                #Get tof readings and find how close the mouse is to the goal
+                left, right = self.tof_update_side()
+                tof_error = right-left
+                count_difference = self.controller._goal_counts - self.avg_encoder_counts()
+                self.tof_log.append(tof_error)
+                #Finding the PID output
+                tof_correction_deg = self.controller._tof_controller.update(tof_error, TOF_PID_DT)
+                scale_factor = count_difference/self.controller._goal_counts
+                scale_factor = max(scale_factor, 0.75)
+                tof_correction_deg *= scale_factor
+                tof_goal_counts = int(tof_correction_deg / 360 * ENCODER_DIFF_PER_REV)
+                if count_difference > -1000: 
+                    tof_goal_counts = 0
+                    self.controller._tof_controller.reset()
+                    self.led_green_set(0)
+                else:
+                    self.led_green_set(1)
+                
+                self.controller._goal_difference = tof_goal_counts
+
 
             if self.controller.at_goal():
                 break
 
         self.drive_stop()
-
+    
     def reset_tof(self, pin):
         pin.value(0)
         utime.sleep_ms(20)
@@ -416,6 +446,13 @@ class Micromouse():
         if error > 25:
             return 8
         return self.map_range(error, 15, 25, 3, 8)
+    
+    def tof_update_side(self):
+        """Returns the left and right tof sensor readings in the order left, right"""
+        left = self.left_sensor._read_range_single()
+        utime.sleep_ms(5)
+        right = self.right_sensor._read_range_single()
+        return left, right
 
     def read_tof_sensors(self):
         """Returns time of flight sensor readings as a tuple in the order front, left, right"""
@@ -485,9 +522,7 @@ class Micromouse():
         # TODO cleanup
         utime.sleep_ms(100)
         #self.wall_align_side()
-        self.wall_align_two_walls()
-        utime.sleep_ms(100)
-        self.wall_align_two_walls(TOF_RETRY_WEIGHTING)
+        #self.wall_align_two_walls()
         utime.sleep_ms(100)
         self.wall_align_front()
 
@@ -563,11 +598,15 @@ class Controller:
     def __init__(self):
         self._distance_controller = PID(KP_DIST, KD_DIST)
         self._angle_controller = PID(KP_ANGLE, KD_ANGLE)
-
+        self._tof_controller = PID(KP_TOF, KD_TOF, KI_TOF)
         self._goal_counts = 0
         self._goal_difference = 0
 
         self._at_goal = False
+        #Log for testing
+        self.pwm_log = []
+        self.adjusted_pwm_log = []
+        self.close_to_goal = 0
 
     def set_goal_distance(self, distance_mm):
         revolutions = distance_mm / MM_PER_REV
@@ -601,18 +640,19 @@ class Controller:
 
         left = int(forward - turn)
         right = int(forward + turn)
-
+        self.pwm_log.append((left, right))
         left = self.apply_deadband(left)
         right = self.apply_deadband(right)
 
         left = max(-MAX_PWM, min(MAX_PWM, left))
         right = max(-MAX_PWM, min(MAX_PWM, right))
-
+        self.adjusted_pwm_log.append((left, right))
         return left, right
 
     def reset(self):
         self._distance_controller.reset()
         self._angle_controller.reset()
+        self._tof_controller.reset()
         self._goal_counts = 0
         self._goal_difference = 0
         self._at_goal = False
