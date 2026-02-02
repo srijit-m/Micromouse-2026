@@ -158,7 +158,7 @@ if __name__ == "__main__":
 
     while True:
         mode = select_mode()
-        mm.move_cells(3, 0.7)
+        mm.move_cells(3, 0.9)
         utime.sleep(300)
         
         if mode == EXPLORE:

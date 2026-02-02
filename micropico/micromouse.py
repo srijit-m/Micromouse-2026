@@ -34,9 +34,9 @@ KP_DIST = 2.7
 KD_DIST = 0.25
 KP_ANGLE = 0.5
 KD_ANGLE = 0.03
-KP_TOF = 6.25
-KD_TOF = 1.1
-KI_TOF = 1.6
+KP_TOF = 17
+KD_TOF = 1.2
+KI_TOF = 4.3
 
 # in counts
 DIST_THRESHOLD = const(75)  # 2.5mm
