@@ -18,7 +18,7 @@ SPEEDRUN = const(2)
 
 # button times in ms
 EXPLORE_DT = const(0)
-SPEEDRUN_DT = const(800)
+SPEEDRUN_DT = const(600)
 
 SEARCH_SPEED = 1.0
 FAST_SPEED = 1.0
@@ -152,15 +152,46 @@ def execute_moves(mouse, moves, speed=FAST_SPEED, interval=0, atomic=False):
         utime.sleep_ms(interval)
 
 
+def calibrate_turns():
+    for _ in range(8):
+        mm.turn_right_90()
+        utime.sleep_ms(250)
+
+    for _ in range(8):
+        mm.turn_left_90()
+        utime.sleep_ms(250)
+
+
 if __name__ == "__main__":
     maze = Maze(MAZE_WIDTH, MAZE_HEIGHT, MAZE_GOAL)
     moves = []
 
     while True:
+        # mode = select_mode()
+        # mm.move_cells(3, 0.9)
+        # mm.turn(90, 1.0)
+
         mode = select_mode()
-        mm.move_cells(4, 0.9)
-        utime.sleep(300)
-        
+        utime.sleep_ms(100)
+
+        # mm.turn(90, 0.9)
+        # utime.sleep(1)
+        # mm.move_cells(1, 0.9)
+        # utime.sleep(1)
+        # mm.turn(90, 0.9)
+        # utime.sleep(1)
+        # mm.move_cells(3, 0.9)
+        # utime.sleep(1)
+        # mm.turn(-90, 0.9)
+        # utime.sleep(1)
+        # current_time = utime.time()
+        # while utime.time() - current_time < 30:
+        #     front, left, right = mm.read_tof_sensors()
+        #     utime.sleep_ms(10)
+        #     print(f"Left Sensor: {left}, Right Sensor: {right} Front Sensor: {front}")
+
+
+         
         if mode == EXPLORE:
             # align
             mm.move_to_centre()
