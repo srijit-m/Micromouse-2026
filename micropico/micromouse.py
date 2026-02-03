@@ -44,7 +44,7 @@ MIN_PWM = const(150)
 MAX_PWM = const(255)
 
 # TOF Sensor Constants in mm
-TOF_DISTANCE = 50
+TOF_DISTANCE = 49
 TOF_DISTANCE_BAND = 7
 WALL_THRESHOLD = 100
 FRONT_BACKUP_DISTANCE = 65
@@ -407,9 +407,9 @@ class Micromouse():
         if error > 19:
             return 7
         if error > 15:
-            return 6
+            return 5.5
         if error > 13:
-            return 5
+            return 4.5
         # Constrain error
         return self.map_range(error, 7, 13, 2, 5)
     
@@ -417,7 +417,7 @@ class Micromouse():
         """This function is for mapping an error of 18mm to 5 degrees and 25mm to 8 degrees"""
         if error > 25:
             return 9
-        return self.map_range(error, 15, 25, 3, 8)
+        return self.map_range(error, 15, 25, 4, 8)
 
     def read_tof_sensors(self):
         """Returns time of flight sensor readings as a tuple in the order front, left, right"""
@@ -478,7 +478,6 @@ class Micromouse():
             # There is a wall in front
             error = front_distance - FRONT_BACKUP_DISTANCE
             self.move(error, 0.7)
-
 
     def move_cells(self, n=1, speed=1.0):
         """Move forward/backward n cells and update the internal position state"""
