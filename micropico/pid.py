@@ -1,6 +1,6 @@
 class PID():
 
-    def __init__(self, kp, kd, ki = 0):
+    def __init__(self, kp, kd, ki = 0.0):
         self.kp = kp
         self.kd = kd
         self.ki = ki

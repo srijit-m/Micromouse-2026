@@ -34,9 +34,9 @@ KP_DIST = 2.7
 KD_DIST = 0.25
 KP_ANGLE = 0.5
 KD_ANGLE = 0.03
-KP_TOF = 17
-KD_TOF = 1.2
-KI_TOF = 4.3
+KP_TOF = 2
+KD_TOF = 0
+KI_TOF = 0
 
 # in counts
 DIST_THRESHOLD = const(75)  # 2.5mm
@@ -344,7 +344,7 @@ class Micromouse():
         # After wiring the micromouse up again, I put the motors the
         # wrong way around, thus I have changed this to -distance
         self.controller.set_goal_distance(-distance)
-        self.controller.set_goal_angle(ANGLE_BIAS)
+        self.controller.set_goal_angle(0)
 
         self.update_motors(speed)
 
@@ -397,23 +397,16 @@ class Micromouse():
                 tof_last = tof_now
                 #Get tof readings and find how close the mouse is to the goal
                 left, right = self.tof_update_side()
-                tof_error = right-left
-                count_difference = self.controller._goal_counts - self.avg_encoder_counts()
+                tof_error = self.calculate_tof_error(left, right)
+                if abs(tof_error) < 5:
+                    tof_error = 0
+                #count_difference = self.controller._goal_counts - self.avg_encoder_counts()
                 self.tof_log.append(tof_error)
                 #Finding the PID output
-                tof_correction_deg = self.controller._tof_controller.update(tof_error, TOF_PID_DT)
-                scale_factor = count_difference/self.controller._goal_counts
-                scale_factor = max(scale_factor, 0.75)
-                tof_correction_deg *= scale_factor
-                tof_goal_counts = int(tof_correction_deg / 360 * ENCODER_DIFF_PER_REV)
-                if count_difference > -1000: 
-                    tof_goal_counts = 0
-                    self.controller._tof_controller.reset()
-                    self.led_green_set(0)
-                else:
-                    self.led_green_set(1)
+                tof_bias = self.controller._tof_controller.update(tof_error, TOF_PID_DT)
+                global ANGLE_BIAS
+                ANGLE_BIAS = tof_bias
                 
-                self.controller._goal_difference = tof_goal_counts
 
 
             if self.controller.at_goal():
@@ -421,6 +414,16 @@ class Micromouse():
 
         self.drive_stop()
     
+    def calculate_tof_error(self, left, right):
+        if left < WALL_THRESHOLD and right < WALL_THRESHOLD:
+            return right-left
+        elif right < WALL_THRESHOLD:
+            return right - TOF_DISTANCE
+        elif left < WALL_THRESHOLD:
+            return -(left - TOF_DISTANCE)
+        else:
+            return 0
+            
     def reset_tof(self, pin):
         pin.value(0)
         utime.sleep_ms(20)
@@ -636,10 +639,11 @@ class Controller:
         )
 
         forward = self._distance_controller.update(dist_error, dt)
+        forward = max(-MAX_PWM, min(MAX_PWM, forward))
         turn = self._angle_controller.update(angle_error, dt)
 
-        left = int(forward - turn)
-        right = int(forward + turn)
+        left = int(forward - turn - ANGLE_BIAS)
+        right = int(forward + turn + ANGLE_BIAS)
         self.pwm_log.append((left, right))
         left = self.apply_deadband(left)
         right = self.apply_deadband(right)
