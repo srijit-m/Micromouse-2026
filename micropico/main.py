@@ -157,6 +157,8 @@ def calibrate_turns():
         mm.turn_right_90()
         utime.sleep_ms(250)
 
+    utime.sleep(1)
+
     for _ in range(8):
         mm.turn_left_90()
         utime.sleep_ms(250)
@@ -167,30 +169,8 @@ if __name__ == "__main__":
     moves = []
 
     while True:
-        # mode = select_mode()
-        # mm.move_cells(3, 0.9)
-        # mm.turn(90, 1.0)
-
         mode = select_mode()
         utime.sleep_ms(100)
-
-        # mm.turn(90, 0.9)
-        # utime.sleep(1)
-        # mm.move_cells(1, 0.9)
-        # utime.sleep(1)
-        # mm.turn(90, 0.9)
-        # utime.sleep(1)
-        # mm.move_cells(3, 0.9)
-        # utime.sleep(1)
-        # mm.turn(-90, 0.9)
-        # utime.sleep(1)
-        # current_time = utime.time()
-        # while utime.time() - current_time < 30:
-        #     front, left, right = mm.read_tof_sensors()
-        #     utime.sleep_ms(10)
-        #     print(f"Left Sensor: {left}, Right Sensor: {right} Front Sensor: {front}")
-
-
          
         if mode == EXPLORE:
             # align
@@ -208,5 +188,3 @@ if __name__ == "__main__":
             execute_moves(mm, moves)
 
         utime.sleep(1)  # so you can see the green led :)
-
-    

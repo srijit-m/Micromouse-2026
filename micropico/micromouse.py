@@ -8,7 +8,7 @@ import math
 import utime
 from vl6180x import VL6180X
 
-START_POS = (4, 0)
+START_POS = (0, 0)
 START_HEADING = NORTH
 
 CELL_SIZE_MM = 180
@@ -16,7 +16,7 @@ CELL_SIZE_MM = 180
 WHEEL_DIAMETER = const(44)  # mm
 ENCODER_1_COUNTS_PER_REV = const(4280)
 ENCODER_2_COUNTS_PER_REV = const(4280)
-ENCODER_DIFF_PER_REV = const(18000)  # drifts about 3mm forward each 360 degrees turn # 17825
+ENCODER_DIFF_PER_REV = const(17825)  # drifts about 3mm forward each 360 degrees turn # 17825
 
 MM_PER_REV = 3.14159 * WHEEL_DIAMETER
 
@@ -31,7 +31,7 @@ TOF_PID_DT = 0.03 # seconds
 
 # tested with dt = 0.01
 KP_DIST = 2.7
-KD_DIST = 0.3
+KD_DIST = 0.25
 KP_ANGLE = 0.5
 KD_ANGLE = 0.03
 KP_TOF = 3
