@@ -44,7 +44,7 @@ ANGLE_THRESHOLD = const(150)  # 2 degrees
 
 
 # min pwm that motors can move at (actually 90 but didn't work well with pid)
-MIN_PWM = const(120) # WAS 150
+MIN_PWM = const(140) # WAS 150
 MAX_PWM = const(255)
 
 # TOF Sensor Constants in mm
@@ -401,14 +401,14 @@ class Micromouse():
                 self.motor_1.spin_power(int(pwm_1 * speed))
                 self.motor_2.spin_power(int(pwm_2 * speed))
             
-            if tof_dt >= TOF_PID_DT and self.controller.tof_enable == 1 and abs((self.controller._goal_counts - self.avg_encoder_counts())) > 200:
+            if tof_dt >= TOF_PID_DT and self.controller.tof_enable == 1 and abs((self.controller._goal_counts - self.avg_encoder_counts())) > 500:
                 tof_last = now
 
                 #Get tof readings and find how close the mouse is to the goal
                 left, right = self.tof_update_side()
                 tof_error = self.calculate_tof_error(left, right)
 
-                if abs(tof_error) < 5:
+                if abs(tof_error) < 3:
                     tof_error = 0
                 elif tof_error > 30:
                     tof_error = 30
