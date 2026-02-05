@@ -171,6 +171,14 @@ if __name__ == "__main__":
     while True:
         mode = select_mode()
         utime.sleep_ms(100)
+        mm.move_to_centre()
+        search_to(maze, mm, (4,4))
+        utime.sleep(1)
+        search_to(maze, mm, (0,4))
+        utime.sleep(1)
+        search_to(maze, mm, (4,0))
+        utime.sleep(1)
+        search_maze(maze, mm)
          
         if mode == EXPLORE:
             # align
