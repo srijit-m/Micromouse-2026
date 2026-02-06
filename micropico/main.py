@@ -26,7 +26,6 @@ FAST_SPEED = 1.0
 # Creating micromouse object
 mm = Micromouse()
 
-
 def select_mode():
     mm.led_green_set(0)
     mm.led_blink_red(2)
@@ -171,7 +170,7 @@ if __name__ == "__main__":
     while True:
         mode = select_mode()
         utime.sleep_ms(100)
-        
+
         if mode == EXPLORE:
             # align
             mm.move_to_centre()
