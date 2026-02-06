@@ -421,7 +421,7 @@ class Micromouse():
                     self.controller.angle_bias = tof_bias
                 else:
                     self.controller.angle_bias = 0 # no walls
-            elif abs((self.controller._goal_counts - self.avg_encoder_counts())) < 500:
+            elif abs((self.controller._goal_counts - self.avg_encoder_counts())) < 50:
                 self.controller.angle_bias = 0
 
             if self.controller.at_goal():
