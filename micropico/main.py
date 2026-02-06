@@ -18,7 +18,7 @@ SPEEDRUN = const(2)
 
 # button times in ms
 EXPLORE_DT = const(0)
-SPEEDRUN_DT = const(800)
+SPEEDRUN_DT = const(600)
 
 SEARCH_SPEED = 1.0
 FAST_SPEED = 1.0
@@ -152,27 +152,26 @@ def execute_moves(mouse, moves, speed=FAST_SPEED, interval=0, atomic=False):
         utime.sleep_ms(interval)
 
 
+def calibrate_turns():
+    for _ in range(8):
+        mm.turn_right_90()
+        utime.sleep_ms(250)
+
+    utime.sleep(1)
+
+    for _ in range(8):
+        mm.turn_left_90()
+        utime.sleep_ms(250)
+
+
 if __name__ == "__main__":
     maze = Maze(MAZE_WIDTH, MAZE_HEIGHT, MAZE_GOAL)
     moves = []
 
     while True:
         mode = select_mode()
-
-        # for _ in range (3):
-        #     for _ in range(4):
-        #         mm.move_cells(1, 1.0)
-        #     mm.turn_around()
-        #     for _ in range(4):
-        #         mm.move_cells(1, 1.0)
-        #     mm.turn_around()
-
-        mm.move_to_centre()
-        search_to(maze, mm, (0,4))
-        utime.sleep(1)
-        search_to(maze, mm, (4,4))
-        utime.sleep(1)
-        search_to(maze, mm, (4,0))
+        utime.sleep_ms(100)
+        
         if mode == EXPLORE:
             # align
             utime.sleep_ms(100)
@@ -188,5 +187,3 @@ if __name__ == "__main__":
             execute_moves(mm, moves)
 
         utime.sleep(1)  # so you can see the green led :)
-
-    
