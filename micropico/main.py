@@ -174,7 +174,8 @@ if __name__ == "__main__":
         
         if mode == EXPLORE:
             # align
-            utime.sleep_ms(100)
+            mm.move_to_centre()
+            utime.sleep(1)
             search_maze(maze, mm)
             moves, optimal = maze.extract_moves(mm.start_pos, mm.start_heading)
             if optimal:
