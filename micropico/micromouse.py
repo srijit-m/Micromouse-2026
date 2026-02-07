@@ -55,6 +55,9 @@ FRONT_BACKUP_DISTANCE = 65
 CENTRE_ALIGN_DISTANCE = 20
 CENTRE_ALIGN_ANGLE = 0
 TOF_UPPER_DISTANCE_BAND = 15
+
+TOF_CRASH_THRESHOLD = 15
+
 class Micromouse():
     """
     Represents the physical Micromouse device in code.
@@ -107,6 +110,8 @@ class Micromouse():
         self.encoder_2 = Encoder(8, 15)
 
         self.controller = Controller()
+
+        self.crashed = 0
 
         # Other
         self.blink_timer = Timer()
@@ -177,6 +182,15 @@ class Micromouse():
 
     def get_heading(self):
         return self.heading
+
+    def has_crashed(self):
+        return self.crashed
+
+    def reset(self):
+        """Clear the crashed flag, and reset the mouse's position and heading to the start"""
+        self.crashed = 0
+        self.position = START_POS
+        self.heading = START_HEADING
 
     def led_set(self, red_val, green_val):
         """
@@ -352,7 +366,6 @@ class Micromouse():
         self.controller.set_goal_angle(0)
 
         self.update_motors(speed)
-    
 
     def turn(self, angle, speed=1.0):
         """Turn right by the specified angle in degrees. If the angle is negative,
@@ -400,12 +413,18 @@ class Micromouse():
 
                 self.motor_1.spin_power(int(pwm_1 * speed))
                 self.motor_2.spin_power(int(pwm_2 * speed))
-            
+
             if tof_dt >= TOF_PID_DT and self.controller.tof_enable == 1 and abs((self.controller._goal_counts - self.avg_encoder_counts())) > 500:
                 tof_last = now
 
-                #Get tof readings and find how close the mouse is to the goal
-                left, right = self.tof_update_side()
+                # Get tof readings and find how close the mouse is to the goal
+                front, left, right = self.read_tof_sensors()
+
+                if front < TOF_CRASH_THRESHOLD:
+                    self.crashed = 1
+                    self.drive_stop()
+                    return
+
                 tof_error = self.calculate_tof_error(left, right)
 
                 if abs(tof_error) < 3:
@@ -416,7 +435,7 @@ class Micromouse():
                     tof_error = -30
 
                 if left < WALL_THRESHOLD or right < WALL_THRESHOLD:
-                    #Finding the PID output
+                    # Finding the PID output
                     tof_bias = self.controller._tof_controller.update(tof_error, TOF_PID_DT)
                     self.controller.angle_bias = tof_bias
                 else:
@@ -431,7 +450,7 @@ class Micromouse():
                 break
 
         self.drive_stop()
-    
+
     def calculate_tof_error(self, left, right):
         if left < WALL_THRESHOLD and right < WALL_THRESHOLD:
             return right-left
@@ -441,7 +460,7 @@ class Micromouse():
             return TOF_DISTANCE - left
         else:
             return 0
-            
+
     def reset_tof(self, pin):
         pin.value(0)
         utime.sleep_ms(20)
@@ -463,13 +482,13 @@ class Micromouse():
             return 4.5
         # Constrain error
         return self.map_range(error, 7, 13, 2, 5)
-    
+
     def map_tof_side_wall_distance_error(self, error):
         """This function is for mapping an error of 18mm to 5 degrees and 25mm to 8 degrees"""
         if error > 25:
             return 8
         return self.map_range(error, 15, 25, 3, 8)
-    
+
     def tof_update_side(self):
         """Returns the left and right tof sensor readings in the order left, right"""
         left = self.left_sensor._read_range_single()
@@ -497,8 +516,8 @@ class Micromouse():
         _, left_distance, right_distance = self.read_tof_sensors()
         # Check for a wall to the right
         if left_distance < WALL_THRESHOLD and right_distance < WALL_THRESHOLD:
-            #There are walls on both sides
-            #check left error and right error
+            # There are walls on both sides
+            # check left error and right error
             error_right = abs(right_distance - 50)
             error_left = abs(left_distance -50)
             if error_right > TOF_DISTANCE_BAND:
@@ -514,7 +533,7 @@ class Micromouse():
                     self.turn(-turn_angle, 0.7)
                 elif left_distance < TOF_DISTANCE-TOF_DISTANCE_BAND:
                     self.turn(turn_angle, 0.7)
-        #Ok am applying left and right correction but only for extreme cases 
+        # Ok am applying left and right correction but only for extreme cases
         elif right_distance < WALL_THRESHOLD:
             error_right = abs(right_distance - 50)
             turn_angle = self.map_tof_side_wall_distance_error(error_right) * weighting
@@ -544,8 +563,8 @@ class Micromouse():
 
         # TODO cleanup
         utime.sleep_ms(100)
-        #self.wall_align_side()
-        #self.wall_align_two_walls()
+        # self.wall_align_side()
+        # self.wall_align_two_walls()
         utime.sleep_ms(100)
         self.wall_align_front()
 
@@ -676,7 +695,7 @@ class Controller:
         left = int(forward - turn - self.angle_bias)
         right = int(forward + turn + self.angle_bias)
 
-        #comment out deadbands for now
+        # comment out deadbands for now
         left = self.apply_deadband(left)
         right = self.apply_deadband(right)
 
@@ -693,4 +712,3 @@ class Controller:
         self._goal_difference = 0
         self.angle_bias = 0
         self._at_goal = False
-        

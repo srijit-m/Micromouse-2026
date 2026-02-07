@@ -23,6 +23,12 @@ class Maze:
         self._v_walls = bytearray([UNKNOWN_WALL for _ in range((width + 1) * height)])
         self._dists = bytearray([UNKNOWN_DIST for _ in range(width * height)])
 
+    def get_dists(self):
+        return self._dists
+
+    def set_dists(self, dists):
+        self._dists = dists
+
     def get_dist(self, position):
         x, y = position
         return self._dists[x + y * self.width]
@@ -35,6 +41,18 @@ class Maze:
         """Return whether the position is within the bounds of the maze"""
         x, y = position
         return 0 <= x < self.width and 0 <= y < self.height
+
+    def get_h_walls(self):
+        return self._h_walls
+
+    def get_v_walls(self):
+        return self._v_walls
+
+    def set_h_walls(self, h_walls):
+        self._h_walls = h_walls
+
+    def set_v_walls(self, v_walls):
+        self._v_walls = v_walls
 
     def get_wall_array(self, position, direction):
         """Returns the appropriate wall array and the index for the wall

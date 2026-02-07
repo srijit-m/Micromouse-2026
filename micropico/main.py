@@ -94,9 +94,29 @@ def move_mouse(mouse, move, speed=1.0):
 
 
 def search_to(maze, mouse, goal, speed=SEARCH_SPEED):
-    """Move to the target position at a safe speed while mapping the maze."""
+    """Move to the target position at a safe speed while mapping the maze.
+
+    Return whether the mouse successfully made it to the goal.
+    """
+
+    # store these to revert back to in case the mouse crashes
+    last_h_walls = maze.get_h_walls()
+    last_v_walls = maze.get_v_walls()
+    last_dists = maze.get_dists()
 
     while mouse.position != goal:
+        # check if the mouse crashed
+        if mouse.has_crashed():
+            # revert to old maze state
+            maze.set_h_walls(last_h_walls)
+            maze.set_v_walls(last_v_walls)
+            maze.set_dists(last_dists)
+
+            # reset mouse position and heading
+            mouse.reset()
+
+            return False
+
         # update walls and distances
         update_walls(maze, mouse)
         maze.floodfill(goal)
@@ -113,20 +133,24 @@ def search_to(maze, mouse, goal, speed=SEARCH_SPEED):
         # TODO: DEBUG add a delay for now
         utime.sleep_ms(250)
 
+    return True
+
 
 def search_maze(maze, mouse):
     """Search to the goal, then search back to the start.
 
     Assumes that the mouse is at the start position and orientation.
     """
-    search_to(maze, mouse, maze.goal)
+    reached_goal = search_to(maze, mouse, maze.goal)
+    if reached_goal:
+        # search back to the start
+        search_to(maze, mouse, mouse.start_pos)
+        mouse.turn_to_face(mouse.start_heading)
+        mouse.back_up()
+    return reached_goal
 
-    search_to(maze, mouse, mouse.start_pos)
-    mouse.turn_to_face(mouse.start_heading)
-    mouse.back_up()
 
-
-def execute_moves(mouse, moves, speed=FAST_SPEED, interval=0, atomic=False):
+def execute_moves(mouse, moves, speed=FAST_SPEED, interval=0):
     """Execute a precomputed move sequence.
 
     The mouse sleeps for interval milliseconds after each move.
@@ -134,14 +158,12 @@ def execute_moves(mouse, moves, speed=FAST_SPEED, interval=0, atomic=False):
     otherwise they are executed as multi-cell motions.
     """
     for move, count in moves:
+        if mouse.has_crashed():
+            mouse.reset()
+            return
+
         if move == FORWARD:
-            if atomic:
-                for _ in range(count):
-                    mouse.move_cells(1, speed=speed)
-                    utime.sleep_ms(interval)
-                continue  # skip the other sleep
-            else:
-                mouse.move_cells(count, speed=speed)
+            mouse.move_cells(count, speed=speed)
         elif move == TURN_RIGHT:
             mouse.turn_right_90(speed=speed)
         elif move == TURN_AROUND:
@@ -174,11 +196,11 @@ if __name__ == "__main__":
         if mode == EXPLORE:
             # align
             mm.move_to_centre()
-            utime.sleep(1)
-            search_maze(maze, mm)
-            moves, optimal = maze.extract_moves(mm.start_pos, mm.start_heading)
-            if optimal:
-                mm.led_green_set(1)  # green led if optimal path found
+            utime.sleep_ms(100)
+            if search_maze(maze, mm):
+                moves, optimal = maze.extract_moves(mm.start_pos, mm.start_heading)
+                if optimal:
+                    mm.led_green_set(1)  # green led if optimal path found
         elif mode == SPEEDRUN:
             # align
             mm.move_to_centre()
