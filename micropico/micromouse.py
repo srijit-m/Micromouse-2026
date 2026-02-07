@@ -562,7 +562,6 @@ class Micromouse():
         self.move(n * CELL_SIZE_MM, speed)
 
         # TODO cleanup
-        utime.sleep_ms(100)
         # self.wall_align_side()
         # self.wall_align_two_walls()
         utime.sleep_ms(100)
