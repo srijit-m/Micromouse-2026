@@ -209,4 +209,6 @@ if __name__ == "__main__":
 
             execute_moves(mm, moves)
 
+            mm.reset()
+
         utime.sleep(1)  # so you can see the green led :)
