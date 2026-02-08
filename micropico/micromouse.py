@@ -564,7 +564,7 @@ class Micromouse():
         # TODO cleanup
         # self.wall_align_side()
         # self.wall_align_two_walls()
-        utime.sleep_ms(100)
+        utime.sleep_ms(50)
         self.wall_align_front()
 
         self.position = step(self.position, self.heading, n)
@@ -576,9 +576,9 @@ class Micromouse():
         self.turn(90, speed)
 
         if left_wall:
-            utime.sleep_ms(50)
+            utime.sleep_ms(25)
             self.back_up()
-            utime.sleep_ms(50)
+            utime.sleep_ms(25)
             self.move_to_centre()
 
         self.heading = right(self.heading)
@@ -590,9 +590,9 @@ class Micromouse():
         self.turn(-90, speed)
 
         if right_wall:
-            utime.sleep_ms(50)
+            utime.sleep_ms(25)
             self.back_up()
-            utime.sleep_ms(50)
+            utime.sleep_ms(25)
             self.move_to_centre()
 
         self.heading = left(self.heading)
@@ -604,10 +604,10 @@ class Micromouse():
         self.turn(180, speed)
 
         # realign only if there was a wall available
-        utime.sleep_ms(50)
+        utime.sleep_ms(25)
         if (front_wall_distance < WALL_THRESHOLD+20):
             self.back_up()
-            utime.sleep_ms(50)
+            utime.sleep_ms(25)
             self.move_to_centre()
 
         self.heading = behind(self.heading)
@@ -619,7 +619,7 @@ class Micromouse():
         self.turn(delta, speed)
         self.heading = direction
 
-    def back_up(self, speed=MIN_PWM, timeout=1000):
+    def back_up(self, speed=MIN_PWM, timeout=1500):
         """Drive the mouse backwards to align with a back wall.
         Uses the encoders to tell when wall has been reached."""
         self.drive(abs(speed))

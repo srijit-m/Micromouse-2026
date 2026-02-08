@@ -131,7 +131,8 @@ def search_to(maze, mouse, goal, speed=SEARCH_SPEED):
         move_mouse(mouse, move, speed=speed)
 
         # TODO: DEBUG add a delay for now
-        utime.sleep_ms(100)
+        # try go faster
+        # utime.sleep_ms(100)
 
     return True
 
@@ -207,5 +208,7 @@ if __name__ == "__main__":
             utime.sleep_ms(100)
 
             execute_moves(mm, moves)
+
+            mm.reset()
 
         utime.sleep(1)  # so you can see the green led :)
